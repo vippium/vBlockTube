@@ -1,3 +1,5 @@
+<img src="https://socialify.git.ci/vippium/vBlockTube/image?custom_language=GreasyFork&font=Jost&language=1&name=1&owner=1&pattern=Circuit+Board&theme=Light" alt="vBlockTube" width="640" height="320" />
+
 ## Script Introduction
 
 This script blocks all YouTube ads, including YouTube Music, YouTube Kids, and YouTube Shorts. It's seamless, with no white space, no flashing, and prioritizes user experience. It's currently the best YouTube ad-blocking script available. Please give it a good review; we've met by chance. Don't recommend it widely, it's not worth the effort. Its main function is seamless, comprehensive ad blocking; its secondary function is providing some useful features. It should be one of the best YouTube ad-blocking scripts available. It's continuously being updated. If you find it useful, please give it a good review. Thank you for your support. If you encounter any problems with the script, please check the error information and problem feedback below and send me the relevant information.
@@ -102,3 +104,4 @@ Solutions of these problems :
 
 ### Specific Plugin Conflict Handling due to Adblockers
 Adblockers may cause conflicts in proper script execution. You need to uncheck the **"Allow ads on specific YouTube channels"** option in Settings -> General.
+
