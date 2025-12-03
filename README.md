@@ -1,4 +1,4 @@
-<img src="https://socialify.git.ci/vippium/vBlockTube/image?custom_language=GreasyFork&font=Jost&language=1&name=1&owner=1&pattern=Circuit+Board&theme=Light" alt="vBlockTube" width="640" height="320" />
+![vBlockTube](https://socialify.git.ci/vippium/vBlockTube/image?custom_language=GreasyFork&font=Jost&issues=1&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Auto)
 
 ## Script Introduction
 
@@ -104,4 +104,5 @@ Solutions of these problems :
 
 ### Specific Plugin Conflict Handling due to Adblockers
 Adblockers may cause conflicts in proper script execution. You need to uncheck the **"Allow ads on specific YouTube channels"** option in Settings -> General.
+
 
