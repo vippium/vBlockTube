@@ -34,22 +34,22 @@ Only three options are there in script, which're enough in my prespective. You c
 #### Ads Removal Location
 
 - Effective URLs :
- - `https://www.youtube.com`
- - `https://m.youtube.com`
+  - `https://www.youtube.com`
+  - `https://m.youtube.com`
 
 - Content removed :
- - The first ad at the beginning of the video list
- - Free movie recommendations available in the video list ***(optional)***
- - Short video recommendation section ***(optional)***
- - Movie Recommendation Section ***(optional)***
- - Currently popular recommendation sections ***(optional)***
- - Game Base Camp Recommended Sections ***(optional)***
- - Video ratings appear occasionally.
- - Occasional YouTube Premium and music membership trials
+  - The first ad at the beginning of the video list
+  - Free movie recommendations available in the video list ***(optional)***
+  - Short video recommendation section ***(optional)***
+  - Movie Recommendation Section ***(optional)***
+  - Currently popular recommendation sections ***(optional)***
+  - Game Base Camp Recommended Sections ***(optional)***
+  - Video ratings appear occasionally.
+  - Occasional YouTube Premium and music membership trials
 
 - Pop-up window :
- - Chrome recommendation window popping up in non-Chrome browsers
- - Premium Trial Window
+  - Chrome recommendation window popping up in non-Chrome browsers
+  - Premium Trial Window
 
 #### Video Playback Page
 - Effective URLs :
@@ -63,32 +63,32 @@ Only three options are there in script, which're enough in my prespective. You c
 
 #### Search page
 - Effective URL :
- - `https://www.youtube.com/results`
- - `https://m.youtube.com/results`
+  - `https://www.youtube.com/results`
+  - `https://m.youtube.com/results`
 - Content removed :
- - Ads in the list
+  - Ads in the list
 
 #### YoutubeMusic
 - Effective URL :
- - `https://music.youtube.com/watch`
+  - `https://music.youtube.com/watch`
 - Content removed :
- - Advertisements during music playback
+  - Advertisements during music playback
 - Effective URL :
- - `https://music.youtube.com`
+  - `https://music.youtube.com`
 - Content removed:
- - Membership pop-up subscription pop-up
+  - Membership pop-up subscription pop-up
 
 #### YouTube Kids
 - Effective URL :
- - `https://www.youtubekids.com/watch`
+  - `https://www.youtubekids.com/watch`
 - Content removed :
- - Ads in YouTube Kids videos
- - Short videos
+  - Ads in YouTube Kids videos
+  - Short videos
 - Effective URL :
- - `https://www.youtube.com/shorts`
- - `https://m.youtube.com/shorts`
+  - `https://www.youtube.com/shorts`
+  - `https://m.youtube.com/shorts`
 - Content removed :
- - Advertising in short video format
+  - Advertising in short video format
 
 ---
 
@@ -105,6 +105,7 @@ Solutions of these problems :
 
 ### Specific Plugin Conflict Handling due to Adblockers
 Adblockers may cause conflicts in proper script execution. You need to uncheck the **"Allow ads on specific YouTube channels"** option in Settings -> General.
+
 
 
 
