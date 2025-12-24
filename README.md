@@ -22,6 +22,7 @@ Only three options are there in script, which're enough in my prespective. You c
 - **2333** - Opens a dialog box with some options. Just make your preference.
 - **2444** - Opens a dialog with information of your preference.
 - **2555** - It'll allow you to reset all your configurations in one click.
+- **2666** - Provide options to hide/unhide buttons from Watch page.
 
 ---
 ### Script functionality
@@ -104,5 +105,6 @@ Solutions of these problems :
 
 ### Specific Plugin Conflict Handling due to Adblockers
 Adblockers may cause conflicts in proper script execution. You need to uncheck the **"Allow ads on specific YouTube channels"** option in Settings -> General.
+
 
 
