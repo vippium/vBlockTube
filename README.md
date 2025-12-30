@@ -1,4 +1,11 @@
-![vBlockTube](https://socialify.git.ci/vippium/vBlockTube/image?custom_language=GreasyFork&font=Jost&issues=1&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Auto)
+![vBlockTube](https://socialify.git.ci/vippium/vBlockTube/image?custom_language=GreasyFork&font=Jost&language=1&name=1&owner=1&pattern=Transparent&theme=Auto)
+
+<p align="center">
+  <a href="https://github.com/vippium/vBlockTube/raw/refs/heads/main/Fuck%20YouTube%20Ads%20wo%20Lubricant.user.js" target="_blank">
+    <img src="https://github.com/vippium/vBlockTube/blob/main/assets/install-from-greasyfork.png" height="90px">
+  </a>
+</p>
+
 
 ## Overview
 
@@ -88,5 +95,6 @@ Feel free to open issues or pull requests if you encounter bugs or want to contr
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
 
