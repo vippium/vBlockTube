@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    http://tampermonkey.net/
-// @version      1.5.3
+// @version      1.5.4
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -26,7 +26,7 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @license      MIT
 // @downloadURL https://update.greasyfork.org/scripts/557720/Fuck%20YouTube%20Ads%20wo%20Lubricant.user.js
-// @updateURL https://update.greasyfork.org/scripts/557720/Fuck%20YouTube%20Ads%20wo%20Lubricant.meta.js
+// @updateURL https://github.com/vippium/vBlockTube/raw/refs/heads/main/Fuck%20YouTube%20Ads%20wo%20Lubricant.user.js
 // ==/UserScript==
 
 (function () {
