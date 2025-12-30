@@ -1,111 +1,90 @@
 ![vBlockTube](https://socialify.git.ci/vippium/vBlockTube/image?custom_language=GreasyFork&font=Jost&issues=1&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Auto)
 
-## Script Introduction
+## Overview
 
-This script blocks all YouTube ads, including YouTube Music, YouTube Kids, and YouTube Shorts. It's seamless, with no white space, no flashing, and prioritizes user experience. It's currently the best YouTube ad-blocking script available. Please give it a good review; we've met by chance. Don't recommend it widely, it's not worth the effort. Its main function is seamless, comprehensive ad blocking; its secondary function is providing some useful features. It should be one of the best YouTube ad-blocking scripts available. It's continuously being updated. If you find it useful, please give it a good review. Thank you for your support. If you encounter any problems with the script, please check the error information and problem feedback below and send me the relevant information.
+**vBlockTube** is a powerful userscript designed to block YouTube ads across all platforms, including YouTube Music, YouTube Kids, and YouTube Shorts. It ensures a smooth, uninterrupted viewing experience by removing all ads without causing any annoying white space or flashing. The script is continuously updated to provide the best ad-blocking experience available.
 
-***If ads appear while playing videos, please first confirm that the problem is with the script and reply as instructed; otherwise, there will be no response.***
+### Key Features
+- **Seamless Ad Blocking**: Removes all ads, including video ads, sponsored content, and membership trials.
+- **Customizable Display**: You can enable or disable content sections such as short video recommendations, movie recommendations, and game hub suggestions.
+- **Enhanced Playback**: Offers features like video/audio downloads, automatic scrolling of Shorts, and other useful functionalities.
+- **Cross-platform Support**: Works on both desktop and mobile versions of YouTube, including YouTube Music and YouTube Kids.
 
----
+## Important Notice
 
-### Important Reminder
-Please do not use any other ad-blocking scripts or plugins to block YouTube logs, ads, or other network requests. This can easily lead to your account being blacklisted. A blacklisted account will result in YouTube giving you special treatment regarding ads on your computer. This will manifest as some videos failing to play; disabling the script, logging out of the account, or using a different account will allow normal playback. Other account functions will not be affected. At this point, you have the following options:
-- Modify the value of the disableRemovePlayerAd variable near line 55 of the script to true, so as not to block the ad at the beginning of the video, while keeping other functions normal.
-- Switching your IP address when accessing YouTube can sometimes restore your account's credit limit. The sign of this restoration is that you can now play all videos normally.
-- Log out of account
-- Change account usage
-- Wait for the script to switch to blacklist mode...
+**Do NOT use any other ad-blocking extensions or scripts** in combination with this userscript. Running multiple ad-blockers can result in your account being blacklisted by YouTube, causing playback issues. If this happens, follow the instructions below to resolve the issue.
 
----
-### How to use options of this script
-Only three options are there in script, which're enough in my prespective. You can use them by typing in Search bar of YouTube :
-- **2333** - Opens a dialog box with some options. Just make your preference.
-- **2444** - Opens a dialog with information of your preference.
-- **2555** - It'll allow you to reset all your configurations in one click.
-- **2666** - Provide options to hide/unhide buttons from Watch page.
-
----
-### Script functionality
-
-- Remove ads *(including regular videos on the homepage, short videos, YouTube Music, YouTube Kids, etc.)*.
-- Customizable content display: Short video recommendations, movie recommendations, live stream recommendations, trending topics recommendations, and game hub recommendations.
-- Including but not limited to video and audio downloads, short release times, automatic scrolling of shorts, and disabling looping of shorts.
-
-#### Ads Removal Location
-
-- Effective URLs :
-  - `https://www.youtube.com`
-  - `https://m.youtube.com`
-
-- Content removed :
-  - The first ad at the beginning of the video list
-  - Free movie recommendations available in the video list ***(optional)***
-  - Short video recommendation section ***(optional)***
-  - Movie Recommendation Section ***(optional)***
-  - Currently popular recommendation sections ***(optional)***
-  - Game Base Camp Recommended Sections ***(optional)***
-  - Video ratings appear occasionally.
-  - Occasional YouTube Premium and music membership trials
-
-- Pop-up window :
-  - Chrome recommendation window popping up in non-Chrome browsers
-  - Premium Trial Window
-
-#### Video Playback Page
-- Effective URLs :
- - `https://www.youtube.com/watch`
- - `https://m.youtube.com/watch`
-- Content removed :
- - Ads in the video
- - Ads in the recommended video list
- - Some channels have paid subscription notices
- - Product display on certain channels
-
-#### Search page
-- Effective URL :
-  - `https://www.youtube.com/results`
-  - `https://m.youtube.com/results`
-- Content removed :
-  - Ads in the list
-
-#### YoutubeMusic
-- Effective URL :
-  - `https://music.youtube.com/watch`
-- Content removed :
-  - Advertisements during music playback
-- Effective URL :
-  - `https://music.youtube.com`
-- Content removed:
-  - Membership pop-up subscription pop-up
-
-#### YouTube Kids
-- Effective URL :
-  - `https://www.youtubekids.com/watch`
-- Content removed :
-  - Ads in YouTube Kids videos
-  - Short videos
-- Effective URL :
-  - `https://www.youtube.com/shorts`
-  - `https://m.youtube.com/shorts`
-- Content removed :
-  - Advertising in short video format
+- Disable the `disableRemovePlayerAd` variable in the script to prevent blocking ads on video start (you can find this option around line 55).
+- If you encounter issues, you can switch your IP address or log out of your account to restore normal playback.
 
 ---
 
-### Problems & Solutions
-The script is completely ineffective in the following scenerios :
-  - Conflicts with other scripts or extensions *(especially ad-blocking related scripts)*.
-  - The script did not load.
+## Script Functionality
 
-Solutions of these problems :
-- Disable all scripts that work with YouTube, or disable extensions one by one in the extension manager to troubleshoot conflicts.
-- Refresh the webpage.
+### Ad Blocking
+
+- **General YouTube (Desktop & Mobile)**: Removes all types of ads, including the first ad at the beginning of the video, pop-ups, and YouTube Premium trials.
+- **YouTube Music**: Blocks all advertisements during music playback and removes membership pop-ups.
+- **YouTube Kids**: Blocks ads in videos and removes short videos.
+- **YouTube Shorts**: Removes all ads and pop-ups in the Shorts section.
+
+### Customizable Features
+
+- **Content Recommendations**: You can toggle the display of various content sections such as trending videos, movie recommendations, game hub, etc.
+- **Video Playback**: Removes all ads during video playback and cleans up recommended video lists.
+- **Short Videos**: Automatically scroll through short videos and disable looping of Shorts.
+- **Download Videos/Audio**: Allows easy downloading of videos and audio from YouTube.
+  
+---
+
+## Script Options
+
+There are three primary options that you can control through YouTube's search bar:
+
+- **2333**: Opens a dialog box with various script options.
+- **2444**: Displays information about the current script settings.
+- **2555**: Resets all script configurations to default.
+- **2666**: Toggle visibility of buttons on the Watch page.
 
 ---
 
-### Specific Plugin Conflict Handling due to Adblockers
-Adblockers may cause conflicts in proper script execution. You need to uncheck the **"Allow ads on specific YouTube channels"** option in Settings -> General.
+## Known Issues & Solutions
 
+### Common Issues
 
+1. **Script Conflict**: If the script isn't working properly, it may conflict with other scripts or browser extensions (especially ad blockers).
+2. **Script Failed to Load**: The script may fail to load if there's an issue with the installation.
 
+### Solutions
 
+- **Troubleshooting Conflicts**: Disable all other YouTube-related scripts or browser extensions one by one to identify the cause of the issue.
+- **Refreshing**: If the script doesn't load, try refreshing the page or restarting the browser.
+
+---
+
+## Specific Plugin Conflict Handling
+
+Some ad-blocking plugins may interfere with this script. To resolve any issues:
+
+1. Open the plugin's settings and **uncheck "Allow ads on specific YouTube channels"** (found in your browser’s adblock settings).
+2. Disable any other ad-blocking extensions that may be running simultaneously.
+
+---
+
+## How to Install
+
+1. Install a userscript manager like **Tampermonkey** or **Greasemonkey**.
+2. Download this script from [GreasyFork](https://greasyfork.org/) and add it to your userscript manager.
+3. Refresh your YouTube tab, and you should start seeing ads blocked!
+
+---
+
+## Contributing
+
+Feel free to open issues or pull requests if you encounter bugs or want to contribute improvements. We welcome any contributions to improve the script!
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
