@@ -74,7 +74,7 @@ Some ad-blocking plugins may interfere with this script. To resolve any issues:
 ## How to Install
 
 1. Install a userscript manager like **Tampermonkey** or **Greasemonkey**.
-2. Download this script from [GreasyFork](https://update.greasyfork.org/scripts/557720/Fuck%20YouTube%20Ads%20wo%20Lubricant.user.js) and add it to your userscript manager.
+2. Download this script from [GreasyFork](https://github.com/vippium/vBlockTube/raw/refs/heads/main/Fuck%20YouTube%20Ads%20wo%20Lubricant.user.js) and add it to your userscript manager.
 3. Refresh your YouTube tab, and you should start seeing ads blocked!
 
 ---
@@ -88,4 +88,5 @@ Feel free to open issues or pull requests if you encounter bugs or want to contr
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
