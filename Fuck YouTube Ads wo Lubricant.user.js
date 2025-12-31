@@ -2689,12 +2689,14 @@
 }
 
 .select-group{
-  cursor:pointer;
   padding:4px 0 6px 0;
   list-style-type:none;
   margin:0;
   padding-left:0;
   user-select:none;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
 }
 
 .item-group{
@@ -2709,6 +2711,76 @@
 
 label{
   font-size:13px;
+}
+
+/* Toggle Switch Styles */
+.toggle-option{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+}
+
+.toggle-switch{
+  position:relative;
+  display:inline-block;
+  width:42px;
+  height:22px;
+  cursor:pointer;
+}
+
+.toggle-switch input{
+  opacity:0;
+  width:0;
+  height:0;
+}
+
+.toggle-slider{
+  position:absolute;
+  cursor:pointer;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  background-color:#ccc;
+  border-radius:22px;
+  transition:all 0.3s ease;
+}
+
+.toggle-slider:before{
+  position:absolute;
+  content:"";
+  height:16px;
+  width:16px;
+  left:3px;
+  bottom:3px;
+  background-color:white;
+  border-radius:50%;
+  transition:all 0.3s ease;
+}
+
+.toggle-switch input:checked + .toggle-slider{
+  background-color:#3498db;
+}
+
+.toggle-switch input:checked + .toggle-slider:before{
+  transform:translateX(20px);
+}
+
+.toggle-switch input:disabled + .toggle-slider{
+  background-color:#e0e0e0;
+  cursor:not-allowed;
+  opacity:0.5;
+}
+
+.toggle-label{
+  font-size:13px;
+  cursor:pointer;
+  user-select:none;
+}
+
+.toggle-option.disabled .toggle-label{
+  color:#999;
+  cursor:not-allowed;
 }
 `;
     const style = unsafeWindow.document.createElement("style");
@@ -3019,27 +3091,56 @@ label{
         const tips = select_item_info.tips && flag_info[select_item_info.tips];
         const condition = select_item_info.condition;
         const select_item = unsafeWindow.document.createElement("li");
+        select_item.className = "toggle-option";
+        
+        const isDisabled = condition && condition.login_status && condition.login_status !== user_data.login;
+        if (isDisabled) {
+          select_item.classList.add("disabled");
+        }
+        
+        const toggleSwitch = unsafeWindow.document.createElement("label");
+        toggleSwitch.className = "toggle-switch";
+        
         const input = unsafeWindow.document.createElement("input");
-        input.type = "radio";
-        input.name = recommend_id + "_option";
+        input.type = "checkbox";
         input.id = recommend_id + "_" + value;
         input.value = value;
-        if (condition && condition.login_status) {
-          if (condition.login_status !== user_data.login) {
-            input.disabled = true;
-          }
-        }
+        input.disabled = isDisabled;
+        
         if (user_data[recommend_id] === value) {
           input.checked = true;
         }
-        input.addEventListener("click", () => {
-          handle_recommend_radio(input);
+        
+        input.addEventListener("change", () => {
+          if (input.checked) {
+            // Uncheck all other toggles in this group
+            const groupToggles = select_group.querySelectorAll('input[type="checkbox"]');
+            groupToggles.forEach((toggle) => {
+              if (toggle !== input) {
+                toggle.checked = false;
+              }
+            });
+            // Update user data
+            user_data[recommend_id] = value;
+            user_data_api.set();
+            config_api.config_init(user_data.language);
+          } else {
+            // Don't allow unchecking - at least one must be selected
+            input.checked = true;
+          }
         });
-        const label = unsafeWindow.document.createElement("label");
-        label.htmlFor = input.id;
+        
+        const slider = unsafeWindow.document.createElement("span");
+        slider.className = "toggle-slider";
+        
+        toggleSwitch.append(input, slider);
+        
+        const label = unsafeWindow.document.createElement("span");
+        label.className = "toggle-label";
         label.innerText = tag;
         tips && (label.title = tips);
-        select_item.append(input, label);
+        
+        select_item.append(toggleSwitch, label);
         select_items.push(select_item);
       });
       const recommend_title_div = unsafeWindow.document.createElement("div");
@@ -5883,16 +5984,67 @@ label{
 .yt-hb-row{
   display:flex;
   align-items:center;
-  gap:6px;
-  margin:2px 0;
+  gap:8px;
+  margin:6px 0;
 }
 
 .yt-hb-row label{
   font-size:13px;
+  flex:1;
+  cursor:pointer;
+  user-select:none;
 }
 
 .yt-hb-row.disabled label{
   color:#999;
+}
+
+/* Toggle Switch Styles for 2666 panel */
+.yt-hb-toggle{
+  position:relative;
+  display:inline-block;
+  width:42px;
+  height:22px;
+  cursor:pointer;
+  flex-shrink:0;
+}
+
+.yt-hb-toggle input{
+  opacity:0;
+  width:0;
+  height:0;
+}
+
+.yt-hb-slider{
+  position:absolute;
+  cursor:pointer;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  background-color:#ccc;
+  border-radius:22px;
+  transition:all 0.3s ease;
+}
+
+.yt-hb-slider:before{
+  position:absolute;
+  content:"";
+  height:16px;
+  width:16px;
+  left:3px;
+  bottom:3px;
+  background-color:white;
+  border-radius:50%;
+  transition:all 0.3s ease;
+}
+
+.yt-hb-toggle input:checked + .yt-hb-slider{
+  background-color:#3498db;
+}
+
+.yt-hb-toggle input:checked + .yt-hb-slider:before{
+  transform:translateX(20px);
 }
 `;
     const style = unsafeWindow.document.createElement("style");
@@ -5919,13 +6071,25 @@ label{
     function row(id, labelText) {
       const div = unsafeWindow.document.createElement("div");
       div.className = "yt-hb-row";
+      
+      const toggleLabel = unsafeWindow.document.createElement("label");
+      toggleLabel.className = "yt-hb-toggle";
+      toggleLabel.htmlFor = id;
+      
       const input = unsafeWindow.document.createElement("input");
       input.type = "checkbox";
       input.id = id;
+      
+      const slider = unsafeWindow.document.createElement("span");
+      slider.className = "yt-hb-slider";
+      
+      toggleLabel.append(input, slider);
+      
       const label = unsafeWindow.document.createElement("label");
       label.htmlFor = id;
       label.textContent = labelText;
-      div.append(input, label);
+      
+      div.append(toggleLabel, label);
       return { div, input };
     }
 
