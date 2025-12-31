@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    http://tampermonkey.net/
-// @version      1.5.6
+// @version      1.5.7
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -84,7 +84,7 @@
 
   const origin_console = console;
   const script_url =
-    "https://update.greasyfork.org/scripts/480192/youtube%E5%B9%BF%E5%91%8A%E6%8B%A6%E6%88%AA.user.js";
+    "https://update.greasyfork.org/scripts/557720/Fuck YouTube Ads wo Lubricant.user.js";
   let href = location.href;
   let ytInitialPlayerResponse_rule;
   let ytInitialData_rule;
