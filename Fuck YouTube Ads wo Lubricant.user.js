@@ -5988,14 +5988,14 @@ label{
   margin:6px 0;
 }
 
-.yt-hb-row label{
+.yt-hb-row span{
   font-size:13px;
   flex:1;
   cursor:pointer;
   user-select:none;
 }
 
-.yt-hb-row.disabled label{
+.yt-hb-row.disabled span{
   color:#999;
 }
 
@@ -6085,9 +6085,12 @@ label{
       
       toggleLabel.append(input, slider);
       
-      const label = unsafeWindow.document.createElement("label");
-      label.htmlFor = id;
+      const label = unsafeWindow.document.createElement("span");
       label.textContent = labelText;
+      label.style.cursor = "pointer";
+      label.addEventListener("click", () => {
+        input.click();
+      });
       
       div.append(toggleLabel, label);
       return { div, input };
