@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
-// @namespace    http://tampermonkey.net/
-// @version      1.5.6
+// @namespace    https://www.github.com/vippium/
+// @version      1.5.8
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -25,7 +25,6 @@
 // @run-at       document-start
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @license      MIT
-// @downloadURL none
 // ==/UserScript==
 
 (function () {
@@ -84,7 +83,7 @@
 
   const origin_console = console;
   const script_url =
-    "https://update.greasyfork.org/scripts/480192/youtube%E5%B9%BF%E5%91%8A%E6%8B%A6%E6%88%AA.user.js";
+    "https://update.greasyfork.org/scripts/557720/Fuck%20YouTube%20Ads%20wo%20Lubricant.user.js";
   let href = location.href;
   let ytInitialPlayerResponse_rule;
   let ytInitialData_rule;
@@ -2380,7 +2379,7 @@
       if (action === "inject_info") log("inject_info", inject_info, 0);
       if (action === "info") {
         if (limit_eval) {
-          log("eval限制使用了", 0);
+          log("eval is restricted", 0);
         } else {
           for (let key of debugger_config_info["info"]) {
             log(key, eval(trustedScript(key)), 0);
