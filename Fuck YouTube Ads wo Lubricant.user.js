@@ -1252,7 +1252,7 @@
             "使用 SponsorBlock 接口自动跳过视频中的赞助内容",
           btn_block_interruption_popup_title: "屏蔽中断弹窗",
           btn_block_interruption_popup_tips:
-            "阻止"遇到中断？"和"视频已暂停"等弹窗",
+            '阻止"遇到中断？"和"视频已暂停"等弹窗',
         },
         "zh-TW": {
           sponsored: "贊助商廣告",
@@ -1312,7 +1312,7 @@
             "使用 SponsorBlock API 自動跳過影片中的贊助內容",
           btn_block_interruption_popup_title: "屏蔽中斷彈窗",
           btn_block_interruption_popup_tips:
-            "阻止"遇到中斷？"和"影片已暫停"等彈窗",
+            '阻止"遇到中斷？"和"影片已暫停"等彈窗',
         },
         "zh-HK": {
           sponsored: "贊助廣告",
@@ -1373,7 +1373,7 @@
             "使用 SponsorBlock API 自動略過影片中的贊助片段",
           btn_block_interruption_popup_title: "屏蔽中斷彈窗",
           btn_block_interruption_popup_tips:
-            "阻止"遇到中斷？"和"影片已暫停"等彈窗",
+            '阻止"遇到中斷？"和"影片已暫停"等彈窗',
         },
         en: {
           sponsored: "Sponsored Ads",
