@@ -266,9 +266,16 @@
           },
           set: function (value) {
             inject_info.ytInitialData = true;
-            // Block interruption popup by setting ytInitialData to undefined on watch pages
+            // Block interruption popup and playback delay by setting ytInitialData to undefined on watch pages
             if (["yt_watch", "mobile_yt_watch"].includes(page_type)) {
+              // Set to undefined to prevent popup initialization and playback delay
               ytInitialData_value = undefined;
+              // Make the property non-writable to prevent YouTube from changing it
+              Object.defineProperty(unsafeWindow, "ytInitialData", {
+                value: undefined,
+                writable: false,
+                configurable: true,
+              });
               return;
             }
             let rules = config_api.get_rules(page_type);
