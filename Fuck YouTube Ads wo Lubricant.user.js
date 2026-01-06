@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    https://www.github.com/vippium/
-// @version      1.6.0
+// @version      1.5.9
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -267,18 +267,6 @@
           },
           set: function (value) {
             inject_info.ytInitialData = true;
-            // Block interruption popup and playback delay by setting ytInitialData to undefined on watch pages
-            if (["yt_watch", "mobile_yt_watch"].includes(page_type)) {
-              // Set to undefined to prevent popup initialization and playback delay
-              ytInitialData_value = undefined;
-              // Make the property non-writable to prevent YouTube from changing it
-              Object.defineProperty(unsafeWindow, "ytInitialData", {
-                value: undefined,
-                writable: false,
-                configurable: true,
-              });
-              return;
-            }
             let rules = config_api.get_rules(page_type);
             ![
               "yt_watch",
