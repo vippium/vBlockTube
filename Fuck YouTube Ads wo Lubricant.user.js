@@ -24,6 +24,7 @@
 // @grant        GM_deleteValue
 // @run-at       document-start
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
+// @homepageURL  https://github.com/vippium/vBlockTube
 // @downloadURL  https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/Fuck YouTube Ads wo Lubricant.user.js
 // @updateURL    https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/Fuck YouTube Ads wo Lubricant.user.js
 // @license      MIT
