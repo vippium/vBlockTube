@@ -10,7 +10,6 @@
 // @match        https://www.youtubekids.com/*
 // @exclude      https://www.youtube.com/live_chat*
 // @exclude      https://www.youtube.com/embed*
-// @connect      https://api.cobalt.tools
 // @connect      api.sponsor.ajay.app
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
@@ -685,7 +684,6 @@
   }
 
   function on_page_change() {
-    let analyzing_download_url = false;
     function common() {
       if (page_type === "yt_shorts") {
         shorts_fun.check_shorts_exist();
@@ -860,49 +858,6 @@
         handler?.call(this, event);
       });
     }
-    function set_download_event(dislike_node, like_node, url = href) {
-      if (!like_node) log("like_node is null");
-      if (!dislike_node) log("dislike_node is null");
-      if (!like_node || !dislike_node) {
-        log("set_download_event error like_node or dislike_node is null", -1);
-        return;
-      }
-      function randomColor() {
-        var letters = "0123456789ABCDEF";
-        var color = "#";
-        for (var i = 0; i < 6; i++) {
-          color += letters[Math.floor(Math.random() * 16)];
-        }
-        return color;
-      }
-      function set_node_download_event(node, type = "like") {
-        node.style.transition = `${
-          node.style.transition && node.style.transition + " , "
-        }background-color 0.5s ease`;
-        node.backgroundColor_ = node.style.backgroundColor;
-        node.resolve_background_color = function () {
-          if (this.background_color_interval_id)
-            clearInterval(this.background_color_interval_id);
-          this.style.backgroundColor = this.backgroundColor_;
-        };
-        set_dbclick(node, () => {
-          if (user_data.dbclick_download_video === "off") return;
-          const tips =
-            type === "like"
-              ? flag_info.download_video_confirm_tips
-              : flag_info.download_audio_confirm_tips;
-          if (!confirm(`${unsafeWindow.document.title}\n\n${tips}`)) return;
-          const result = video_download(url, type !== "like", node);
-          if (result) {
-            node.background_color_interval_id = setInterval(() => {
-              node.style.backgroundColor = randomColor();
-            }, 100);
-          }
-        });
-      }
-      set_node_download_event(like_node, "like");
-      set_node_download_event(dislike_node, "dislike");
-    }
     function set_shorts_dbclick_like(video_node) {
       video_node =
         page_type === "yt_shorts"
@@ -1007,101 +962,6 @@
         }
         this.play();
       });
-    }
-    function set_shorts_download(like_button) {
-      const dislike_button = $(
-        "ytd-reel-video-renderer[is-active] #dislike-button > yt-button-shape > label > button"
-      );
-      set_download_event(dislike_button, like_button);
-    }
-    function set_music_download(dislike_node) {
-      const like_node = dislike_node.parentElement.parentElement.querySelector(
-        "#button-shape-like > button"
-      );
-      set_download_event(dislike_node, like_node);
-    }
-    function set_watch_download(wrapper_node) {
-      const like_node = wrapper_node.querySelector(
-        "like-button-view-model button"
-      );
-      const dislike_node = wrapper_node.querySelector(
-        "dislike-button-view-model button"
-      );
-      set_download_event(dislike_node, like_node);
-    }
-    function set_mobile_shorts_download(wrapper_node) {
-      const nodes = wrapper_node.querySelectorAll("button");
-      if (nodes.length !== 2) {
-        log(
-          "set_mobile_shorts_download wrong number of nodes",
-          nodes.length,
-          -1
-        );
-        return;
-      }
-      const like_node = nodes[0];
-      const dislike_node = nodes[1];
-      dislike_node.click_intercept_propagation = true;
-      dislike_node.dbclick_intercept_propagation = true;
-      like_node.click_intercept_propagation = true;
-      like_node.dbclick_intercept_propagation = true;
-      set_download_event(dislike_node, like_node);
-    }
-    function video_download(
-      url = href,
-      isAudioOnly = false,
-      targetNode = null
-    ) {
-      if (page_type === "yt_music_watch") {
-        url = "https://www.youtube.com/watch?" + href.split("?")[1];
-      }
-      if (analyzing_download_url) return false;
-      analyzing_download_url = true;
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "https://api.cobalt.tools/api/json", true);
-      xhr.setRequestHeader("Cache-Control", "no-cache");
-      xhr.setRequestHeader("Accept", "application/json");
-      xhr.setRequestHeader("Content-Type", "application/json");
-
-      const data = JSON.stringify({
-        url: encodeURI(url),
-        vQuality: "max",
-        filenamePattern: "basic",
-        isAudioOnly: isAudioOnly,
-        disableMetadata: true,
-      });
-      xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const response = JSON.parse(xhr.responseText);
-          const download_url = response?.url;
-          if (download_url) {
-            window.open(download_url, "_blank");
-            analyzing_download_url = false;
-            targetNode.resolve_background_color();
-            return;
-          }
-        }
-        let tips;
-        try {
-          const json_data = JSON.parse(xhr.responseText);
-          tips = json_data?.text;
-        } catch (error) {
-          tips = xhr.responseText;
-        }
-        alert(
-          `download failed\nstatus: ${xhr.status}\nresponseText: ${tips}\n`
-        );
-        analyzing_download_url = false;
-        targetNode.resolve_background_color();
-      };
-
-      xhr.onerror = function (error) {
-        alert(`download failed\nstatus: ${xhr.status}\nerror: ${error}\n`);
-        analyzing_download_url = false;
-        targetNode.resolve_background_color();
-      };
-      xhr.send(data);
-      return true;
     }
   }
 
@@ -1231,10 +1091,6 @@
           page_info: "页面信息",
           rule_info: "规则信息",
           del_config_confirm_tips: "你确定要删除所有配置信息吗？",
-          btn_dbclick_download_video_tips: "双击赞下载视频，双击踩下载音频",
-          btn_dbclick_download_video_title: "双击下载视频",
-          download_video_confirm_tips: "要下载这个视频吗？",
-          download_audio_confirm_tips: "要下载这个音频吗？",
           btn_shorts_auto_scroll_title: "自动滚动",
           bt_shorts_disable_loop_play_title: "禁用循环播放",
           btn_shorts_dbclick_like_title: "双击视频点赞",
@@ -1287,11 +1143,6 @@
           page_info: "頁面資訊",
           rule_info: "規則資訊",
           del_config_confirm_tips: "你確定要刪除所有設定資訊嗎？",
-          btn_dbclick_download_video_tips:
-            "雙擊按讚下載影片，雙擊不喜歡下載音檔",
-          btn_dbclick_download_video_title: "雙擊下載影片",
-          download_video_confirm_tips: "要下載這個影片嗎？",
-          download_audio_confirm_tips: "要下載這個音檔嗎？",
           btn_shorts_auto_scroll_title: "自動捲動",
           bt_shorts_disable_loop_play_title: "禁止循環播放",
           btn_shorts_dbclick_like_title: "雙擊影片按讚",
@@ -1345,11 +1196,6 @@
           page_info: "頁面資訊",
           rule_info: "規則資訊",
           del_config_confirm_tips: "你確定要刪除所有設定資訊嗎？",
-          btn_dbclick_download_video_tips:
-            "雙擊喜歡下載影片，雙擊不喜歡下載音檔",
-          btn_dbclick_download_video_title: "雙擊下載影片",
-          download_video_confirm_tips: "要下載這個影片嗎？",
-          download_audio_confirm_tips: "要下載這個音檔嗎？",
           btn_shorts_auto_scroll_title: "自動捲動",
           bt_shorts_disable_loop_play_title: "禁止循環播放",
           btn_shorts_dbclick_like_title: "雙擊影片按讚",
@@ -1406,11 +1252,6 @@
           rule_info: "Rule info",
           del_config_confirm_tips:
             "Are you sure you want to delete all configuration settings?",
-          btn_dbclick_download_video_tips:
-            "Double-click the like button to download the video, double-click the dislike button to download the audio",
-          btn_dbclick_download_video_title: "DoubleClickDownloadVideo",
-          download_video_confirm_tips: "Do you want to download this video?",
-          download_audio_confirm_tips: "Do you want to download this audio?",
           btn_shorts_auto_scroll_title: "AutoScroll",
           bt_shorts_disable_loop_play_title: "DisableLoopPlay",
           btn_shorts_dbclick_like_title: "DoubleClickLikeVideo",
@@ -4389,7 +4230,6 @@ label{
           shorts_add_video_progress: "onTap",
           shorts_dbclick_like: "off",
           shorts_disable_loop_play: "on",
-          dbclick_download_video: "off",
           sponsorblock: "on",
           language: "en",
           channel_infos: {
@@ -4403,7 +4243,6 @@ label{
             hide_live_chat_replay: "on",
           },
           global_shorts_block: "on",
-          hide_download_button: "off",
           hide_share_button: "off",
           hide_thanks_button: "off",
           hide_clip_button: "off",
@@ -4506,7 +4345,6 @@ label{
         }
 
         const newHideKeys = [
-          "hide_download_button",
           "hide_share_button",
           "hide_thanks_button",
           "hide_clip_button",
@@ -5750,82 +5588,75 @@ label{
     } else {
       if (user_data.hide_ask_button === "on") {
         rules.push('button[aria-label="Ask"] { display: none !important; }');
-        rules.push(
-          "button .yt-spec-button-shape-next__button-text-content:has(> span, > div, > *) { }"
-        );
+
+        if (user_data.hide_share_button === "on") {
+          rules.push(
+            "#actions #menu ytd-menu-renderer > yt-button-view-model { display: none !important; }"
+          );
+          rules.push(
+            'button[aria-label="Share"] { display: none !important; }'
+          );
+        }
+
+        if (user_data.hide_thanks_button === "on") {
+          rules.push(
+            'button[aria-label="Thanks"] { display: none !important; }'
+          );
+        }
+
+        if (user_data.hide_clip_button === "on") {
+          rules.push('button[aria-label="Clip"] { display: none !important; }');
+        }
+
+        if (user_data.hide_more_actions_button === "on") {
+          rules.push(
+            "yt-button-shape#button-shape { display: none !important; }"
+          );
+          rules.push(
+            'button[aria-label="More actions"] { display: none !important; }'
+          );
+        }
+
+        if (user_data.hide_save_button === "on") {
+          rules.push(
+            'button[aria-label="Save to playlist"] { display: none !important; }'
+          );
+        }
+
+        if (user_data.hide_subscribe_button === "on") {
+          rules.push("#subscribe-button { display: none !important; }");
+        }
+
+        if (user_data.hide_like_bar === "on") {
+          rules.push(
+            ".ytSegmentedLikeDislikeButtonViewModelSegmentedButtonsWrapper { display: none !important; }"
+          );
+        }
+
+        if (user_data.hide_join_button === "on") {
+          rules.push("#sponsor-button { display: none !important; }");
+        }
       }
 
-      if (user_data.hide_download_button === "on") {
-        rules.push(
-          "ytd-download-button-renderer { display: none !important; }"
-        );
-        rules.push(
-          'button[aria-label="Download"] { display: none !important; }'
-        );
+      let css = rules.join("\n");
+      let styleEl = unsafeWindow.document.getElementById(
+        "yt-hide-buttons-style"
+      );
+      if (!styleEl) {
+        styleEl = unsafeWindow.document.createElement("style");
+        styleEl.id = "yt-hide-buttons-style";
+        unsafeWindow.document.head.appendChild(styleEl);
       }
-
-      if (user_data.hide_share_button === "on") {
-        rules.push(
-          "#actions #menu ytd-menu-renderer > yt-button-view-model { display: none !important; }"
-        );
-        rules.push('button[aria-label="Share"] { display: none !important; }');
-      }
-
-      if (user_data.hide_thanks_button === "on") {
-        rules.push('button[aria-label="Thanks"] { display: none !important; }');
-      }
-
-      if (user_data.hide_clip_button === "on") {
-        rules.push('button[aria-label="Clip"] { display: none !important; }');
-      }
-
-      if (user_data.hide_more_actions_button === "on") {
-        rules.push(
-          "yt-button-shape#button-shape { display: none !important; }"
-        );
-        rules.push(
-          'button[aria-label="More actions"] { display: none !important; }'
-        );
-      }
-
-      if (user_data.hide_save_button === "on") {
-        rules.push(
-          'button[aria-label="Save to playlist"] { display: none !important; }'
-        );
-      }
-
-      if (user_data.hide_subscribe_button === "on") {
-        rules.push("#subscribe-button { display: none !important; }");
-      }
-
-      if (user_data.hide_like_bar === "on") {
-        rules.push(
-          ".ytSegmentedLikeDislikeButtonViewModelSegmentedButtonsWrapper { display: none !important; }"
-        );
-      }
-
-      if (user_data.hide_join_button === "on") {
-        rules.push("#sponsor-button { display: none !important; }");
-      }
+      styleEl.textContent = css;
     }
 
-    let css = rules.join("\n");
-    let styleEl = unsafeWindow.document.getElementById("yt-hide-buttons-style");
-    if (!styleEl) {
-      styleEl = unsafeWindow.document.createElement("style");
-      styleEl.id = "yt-hide-buttons-style";
-      unsafeWindow.document.head.appendChild(styleEl);
-    }
-    styleEl.textContent = css;
-  }
+    function display_hide_buttons_win() {
+      const existing = unsafeWindow.document.getElementById(
+        "yt-hide-buttons-popup"
+      );
+      if (existing) existing.remove();
 
-  function display_hide_buttons_win() {
-    const existing = unsafeWindow.document.getElementById(
-      "yt-hide-buttons-popup"
-    );
-    if (existing) existing.remove();
-
-    const css = `
+      const css = `
 #yt-hide-buttons-popup{
   z-index:999999999;
   position:fixed;
@@ -5896,117 +5727,116 @@ label{
   color:#999;
 }
 `;
-    const style = unsafeWindow.document.createElement("style");
-    style.textContent = css;
-    unsafeWindow.document.head.appendChild(style);
+      const style = unsafeWindow.document.createElement("style");
+      style.textContent = css;
+      unsafeWindow.document.head.appendChild(style);
 
-    const popup = unsafeWindow.document.createElement("div");
-    popup.id = "yt-hide-buttons-popup";
+      const popup = unsafeWindow.document.createElement("div");
+      popup.id = "yt-hide-buttons-popup";
 
-    const header = unsafeWindow.document.createElement("div");
-    header.id = "yt-hide-buttons-header";
-    header.textContent = "Watch buttons";
+      const header = unsafeWindow.document.createElement("div");
+      header.id = "yt-hide-buttons-header";
+      header.textContent = "Watch buttons";
 
-    const topbar = unsafeWindow.document.createElement("div");
-    topbar.id = "yt-hide-buttons-topbar";
-    const closeBtn = unsafeWindow.document.createElement("button");
-    closeBtn.id = "yt-hide-buttons-close";
-    closeBtn.textContent = "Close";
-    topbar.appendChild(closeBtn);
+      const topbar = unsafeWindow.document.createElement("div");
+      topbar.id = "yt-hide-buttons-topbar";
+      const closeBtn = unsafeWindow.document.createElement("button");
+      closeBtn.id = "yt-hide-buttons-close";
+      closeBtn.textContent = "Close";
+      topbar.appendChild(closeBtn);
 
-    const body = unsafeWindow.document.createElement("div");
-    body.id = "yt-hide-buttons-body";
+      const body = unsafeWindow.document.createElement("div");
+      body.id = "yt-hide-buttons-body";
 
-    function row(id, labelText) {
-      const div = unsafeWindow.document.createElement("div");
-      div.className = "yt-hb-row";
-      const input = unsafeWindow.document.createElement("input");
-      input.type = "checkbox";
-      input.id = id;
-      const label = unsafeWindow.document.createElement("label");
-      label.htmlFor = id;
-      label.textContent = labelText;
-      div.append(input, label);
-      return { div, input };
-    }
-
-    const rows = [
-      row("hb_download", "Download"),
-      row("hb_ask", "Ask (Gemini)"),
-      row("hb_share", "Share"),
-      row("hb_thanks", "Thanks"),
-      row("hb_clip", "Clip"),
-      row("hb_save", "Save to playlist"),
-      row("hb_more", "More actions"),
-      row("hb_subscribe", "Subscribe+Bell"),
-      row("hb_likebar", "Like/Dislike bar"),
-      row("hb_join", "Join"),
-      row("hb_livechat_replay", "Live chat replay teaser"),
-    ];
-
-    for (const { div } of rows) {
-      body.appendChild(div);
-    }
-
-    popup.append(header, topbar, body);
-    unsafeWindow.document.body.appendChild(popup);
-
-    const map = [
-      ["hb_download", "hide_download_button"],
-      ["hb_ask", "hide_ask_button"],
-      ["hb_share", "hide_share_button"],
-      ["hb_thanks", "hide_thanks_button"],
-      ["hb_clip", "hide_clip_button"],
-      ["hb_more", "hide_more_actions_button"],
-      ["hb_save", "hide_save_button"],
-      ["hb_subscribe", "hide_subscribe_button"],
-      ["hb_likebar", "hide_like_bar"],
-      ["hb_join", "hide_join_button"],
-    ];
-
-    const checkboxById = {};
-    for (const { input } of rows) {
-      checkboxById[input.id] = input;
-    }
-
-    for (const [checkboxId, key] of map) {
-      const input = checkboxById[checkboxId];
-      input.checked = user_data[key] === "on";
-    }
-
-    // Live chat replay section
-    if (user_data.watch_page_config?.hide_live_chat_replay === "on") {
-      checkboxById["hb_livechat_replay"].checked = true;
-    }
-
-    for (const [checkboxId, key] of map) {
-      const input = checkboxById[checkboxId];
-      input.addEventListener("change", () => {
-        user_data[key] = input.checked ? "on" : "off";
-        user_data_api.set();
-        apply_hide_buttons_css();
-      });
-    }
-
-    checkboxById["hb_livechat_replay"].addEventListener("change", () => {
-      user_data.watch_page_config.hide_live_chat_replay = checkboxById[
-        "hb_livechat_replay"
-      ].checked
-        ? "on"
-        : "off";
-      user_data_api.set();
-      if (user_data.watch_page_config.hide_live_chat_replay === "on") {
-        hide_teaser_carousel();
-      } else {
-        const n = unsafeWindow.document.querySelector("#teaser-carousel");
-        if (n) n.style.display = "";
+      function row(id, labelText) {
+        const div = unsafeWindow.document.createElement("div");
+        div.className = "yt-hb-row";
+        const input = unsafeWindow.document.createElement("input");
+        input.type = "checkbox";
+        input.id = id;
+        const label = unsafeWindow.document.createElement("label");
+        label.htmlFor = id;
+        label.textContent = labelText;
+        div.append(input, label);
+        return { div, input };
       }
-    });
 
-    function close() {
-      popup.remove();
+      const rows = [
+        row("hb_ask", "Ask (Gemini)"),
+        row("hb_share", "Share"),
+        row("hb_thanks", "Thanks"),
+        row("hb_clip", "Clip"),
+        row("hb_save", "Save to playlist"),
+        row("hb_more", "More actions"),
+        row("hb_subscribe", "Subscribe+Bell"),
+        row("hb_likebar", "Like/Dislike bar"),
+        row("hb_join", "Join"),
+        row("hb_livechat_replay", "Live chat replay teaser"),
+      ];
+
+      for (const { div } of rows) {
+        body.appendChild(div);
+      }
+
+      popup.append(header, topbar, body);
+      unsafeWindow.document.body.appendChild(popup);
+
+      const map = [
+        ["hb_ask", "hide_ask_button"],
+        ["hb_share", "hide_share_button"],
+        ["hb_thanks", "hide_thanks_button"],
+        ["hb_clip", "hide_clip_button"],
+        ["hb_more", "hide_more_actions_button"],
+        ["hb_save", "hide_save_button"],
+        ["hb_subscribe", "hide_subscribe_button"],
+        ["hb_likebar", "hide_like_bar"],
+        ["hb_join", "hide_join_button"],
+      ];
+
+      const checkboxById = {};
+      for (const { input } of rows) {
+        checkboxById[input.id] = input;
+      }
+
+      for (const [checkboxId, key] of map) {
+        const input = checkboxById[checkboxId];
+        input.checked = user_data[key] === "on";
+      }
+
+      // Live chat replay section
+      if (user_data.watch_page_config?.hide_live_chat_replay === "on") {
+        checkboxById["hb_livechat_replay"].checked = true;
+      }
+
+      for (const [checkboxId, key] of map) {
+        const input = checkboxById[checkboxId];
+        input.addEventListener("change", () => {
+          user_data[key] = input.checked ? "on" : "off";
+          user_data_api.set();
+          apply_hide_buttons_css();
+        });
+      }
+
+      checkboxById["hb_livechat_replay"].addEventListener("change", () => {
+        user_data.watch_page_config.hide_live_chat_replay = checkboxById[
+          "hb_livechat_replay"
+        ].checked
+          ? "on"
+          : "off";
+        user_data_api.set();
+        if (user_data.watch_page_config.hide_live_chat_replay === "on") {
+          hide_teaser_carousel();
+        } else {
+          const n = unsafeWindow.document.querySelector("#teaser-carousel");
+          if (n) n.style.display = "";
+        }
+      });
+
+      function close() {
+        popup.remove();
+      }
+      closeBtn.addEventListener("click", close);
+      make_popup_draggable(popup, header);
     }
-    closeBtn.addEventListener("click", close);
-    make_popup_draggable(popup, header);
   }
 })();
