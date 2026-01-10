@@ -5236,7 +5236,14 @@ label{
   /* ============ SponsorBlock integration ============ */
 
   const SB_API = "https://api.sponsor.ajay.app/api/skipSegments";
-  const SB_SKIP_CATEGORIES = ["sponsor"];
+  const SB_SKIP_CATEGORIES = [
+    "sponsor",
+    "intro",
+    "outro",
+    "selfpromo",
+    "interaction",
+    "music_offtopic",
+  ];
   const SB_SKIP_PADDING = 0.35;
 
   const sb_segmentCache = new Map();
@@ -5406,28 +5413,55 @@ label{
       return;
     }
 
-    if (
-      ![
-        "yt_watch",
-        "mobile_yt_watch",
-        "yt_shorts",
-        "mobile_yt_shorts",
-        "yt_music_watch",
-      ].includes(page_type)
-    ) {
-      return;
+    // Handler function to check and attach skipper
+    function handleNavigation() {
+      if (user_data.sponsorblock === "off") return;
+
+      if (
+        ![
+          "yt_watch",
+          "mobile_yt_watch",
+          "yt_shorts",
+          "mobile_yt_shorts",
+          "yt_music_watch",
+        ].includes(page_type)
+      ) {
+        return;
+      }
+
+      const videoId = sb_getVideoId();
+      if (!videoId) {
+        sb_log("No videoId found for current page_type", page_type);
+        return;
+      }
+
+      unsafeWindow.setTimeout(() => {
+        sb_attachSkipper(videoId);
+      }, 800);
     }
 
-    const videoId = sb_getVideoId();
-    if (!videoId) {
-      sb_log("No videoId found for current page_type", page_type);
-      return;
-    }
+    // Listen to YouTube navigation events
+    unsafeWindow.document.addEventListener(
+      "yt-navigate-finish",
+      handleNavigation
+    );
+    unsafeWindow.document.addEventListener(
+      "yt-page-data-updated",
+      handleNavigation
+    );
 
-    unsafeWindow.setTimeout(() => {
-      sb_attachSkipper(videoId);
-    }, 800);
+    // Initial call for first video
+    handleNavigation();
+
+    // Fallback interval to handle missed events
+    unsafeWindow.setInterval(() => {
+      handleNavigation();
+    }, 3000);
+
+    sb_log("SponsorBlock navigation listeners attached");
   }
+
+  /* ====== HIDE CREATE BUTTON ====== */
 
   function init_create_button_observer() {
     const header =
