@@ -5612,7 +5612,7 @@ label{
     };
   }
 
-  /* ====== 2666 WATCH BUTTON HIDER PANEL ====== */
+  /* ====== 2666 WATCH PAGE ELEMENTS HIDER PANEL ====== */
 
   function apply_hide_buttons_css() {
     const rules = [];
