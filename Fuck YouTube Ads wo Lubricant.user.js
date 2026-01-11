@@ -1856,6 +1856,9 @@
             ].includes(this.value)
           ) {
             setTimeout(() => {
+              // Close search dropdown/suggestions
+              search_input_node.blur();
+
               if (search_input_node.value === open_config_keyword) {
                 search_input_node.value = "";
                 display_config_win();
