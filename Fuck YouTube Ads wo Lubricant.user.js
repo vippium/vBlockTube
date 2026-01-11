@@ -5683,14 +5683,15 @@ label{
       }
       styleEl.textContent = css;
     }
+  }
 
-    function display_hide_buttons_win() {
-      const existing = unsafeWindow.document.getElementById(
-        "yt-hide-buttons-popup"
-      );
-      if (existing) existing.remove();
+  function display_hide_buttons_win() {
+    const existing = unsafeWindow.document.getElementById(
+      "yt-hide-buttons-popup"
+    );
+    if (existing) existing.remove();
 
-      const css = `
+    const css = `
 #yt-hide-buttons-popup{
   z-index:999999999;
   position:fixed;
@@ -5761,116 +5762,115 @@ label{
   color:#999;
 }
 `;
-      const style = unsafeWindow.document.createElement("style");
-      style.textContent = css;
-      unsafeWindow.document.head.appendChild(style);
+    const style = unsafeWindow.document.createElement("style");
+    style.textContent = css;
+    unsafeWindow.document.head.appendChild(style);
 
-      const popup = unsafeWindow.document.createElement("div");
-      popup.id = "yt-hide-buttons-popup";
+    const popup = unsafeWindow.document.createElement("div");
+    popup.id = "yt-hide-buttons-popup";
 
-      const header = unsafeWindow.document.createElement("div");
-      header.id = "yt-hide-buttons-header";
-      header.textContent = "Watch buttons";
+    const header = unsafeWindow.document.createElement("div");
+    header.id = "yt-hide-buttons-header";
+    header.textContent = "Watch buttons";
 
-      const topbar = unsafeWindow.document.createElement("div");
-      topbar.id = "yt-hide-buttons-topbar";
-      const closeBtn = unsafeWindow.document.createElement("button");
-      closeBtn.id = "yt-hide-buttons-close";
-      closeBtn.textContent = "Close";
-      topbar.appendChild(closeBtn);
+    const topbar = unsafeWindow.document.createElement("div");
+    topbar.id = "yt-hide-buttons-topbar";
+    const closeBtn = unsafeWindow.document.createElement("button");
+    closeBtn.id = "yt-hide-buttons-close";
+    closeBtn.textContent = "Close";
+    topbar.appendChild(closeBtn);
 
-      const body = unsafeWindow.document.createElement("div");
-      body.id = "yt-hide-buttons-body";
+    const body = unsafeWindow.document.createElement("div");
+    body.id = "yt-hide-buttons-body";
 
-      function row(id, labelText) {
-        const div = unsafeWindow.document.createElement("div");
-        div.className = "yt-hb-row";
-        const input = unsafeWindow.document.createElement("input");
-        input.type = "checkbox";
-        input.id = id;
-        const label = unsafeWindow.document.createElement("label");
-        label.htmlFor = id;
-        label.textContent = labelText;
-        div.append(input, label);
-        return { div, input };
-      }
-
-      const rows = [
-        row("hb_ask", "Ask (Gemini)"),
-        row("hb_share", "Share"),
-        row("hb_thanks", "Thanks"),
-        row("hb_clip", "Clip"),
-        row("hb_save", "Save to playlist"),
-        row("hb_more", "More actions"),
-        row("hb_subscribe", "Subscribe+Bell"),
-        row("hb_likebar", "Like/Dislike bar"),
-        row("hb_join", "Join"),
-        row("hb_livechat_replay", "Live chat replay teaser"),
-      ];
-
-      for (const { div } of rows) {
-        body.appendChild(div);
-      }
-
-      popup.append(header, topbar, body);
-      unsafeWindow.document.body.appendChild(popup);
-
-      const map = [
-        ["hb_ask", "hide_ask_button"],
-        ["hb_share", "hide_share_button"],
-        ["hb_thanks", "hide_thanks_button"],
-        ["hb_clip", "hide_clip_button"],
-        ["hb_more", "hide_more_actions_button"],
-        ["hb_save", "hide_save_button"],
-        ["hb_subscribe", "hide_subscribe_button"],
-        ["hb_likebar", "hide_like_bar"],
-        ["hb_join", "hide_join_button"],
-      ];
-
-      const checkboxById = {};
-      for (const { input } of rows) {
-        checkboxById[input.id] = input;
-      }
-
-      for (const [checkboxId, key] of map) {
-        const input = checkboxById[checkboxId];
-        input.checked = user_data[key] === "on";
-      }
-
-      // Live chat replay section
-      if (user_data.watch_page_config?.hide_live_chat_replay === "on") {
-        checkboxById["hb_livechat_replay"].checked = true;
-      }
-
-      for (const [checkboxId, key] of map) {
-        const input = checkboxById[checkboxId];
-        input.addEventListener("change", () => {
-          user_data[key] = input.checked ? "on" : "off";
-          user_data_api.set();
-          apply_hide_buttons_css();
-        });
-      }
-
-      checkboxById["hb_livechat_replay"].addEventListener("change", () => {
-        user_data.watch_page_config.hide_live_chat_replay = checkboxById[
-          "hb_livechat_replay"
-        ].checked
-          ? "on"
-          : "off";
-        user_data_api.set();
-        if (user_data.watch_page_config.hide_live_chat_replay === "on") {
-          hide_teaser_carousel();
-        } else {
-          const n = unsafeWindow.document.querySelector("#teaser-carousel");
-          if (n) n.style.display = "";
-        }
-      });
-
-      function close() {
-        popup.remove();
-      }
-      closeBtn.addEventListener("click", close);
-      make_popup_draggable(popup, header);
+    function row(id, labelText) {
+      const div = unsafeWindow.document.createElement("div");
+      div.className = "yt-hb-row";
+      const input = unsafeWindow.document.createElement("input");
+      input.type = "checkbox";
+      input.id = id;
+      const label = unsafeWindow.document.createElement("label");
+      label.htmlFor = id;
+      label.textContent = labelText;
+      div.append(input, label);
+      return { div, input };
     }
+
+    const rows = [
+      row("hb_ask", "Ask (Gemini)"),
+      row("hb_share", "Share"),
+      row("hb_thanks", "Thanks"),
+      row("hb_clip", "Clip"),
+      row("hb_save", "Save to playlist"),
+      row("hb_more", "More actions"),
+      row("hb_subscribe", "Subscribe+Bell"),
+      row("hb_likebar", "Like/Dislike bar"),
+      row("hb_join", "Join"),
+      row("hb_livechat_replay", "Live chat replay teaser"),
+    ];
+
+    for (const { div } of rows) {
+      body.appendChild(div);
+    }
+
+    popup.append(header, topbar, body);
+    unsafeWindow.document.body.appendChild(popup);
+
+    const map = [
+      ["hb_ask", "hide_ask_button"],
+      ["hb_share", "hide_share_button"],
+      ["hb_thanks", "hide_thanks_button"],
+      ["hb_clip", "hide_clip_button"],
+      ["hb_more", "hide_more_actions_button"],
+      ["hb_save", "hide_save_button"],
+      ["hb_subscribe", "hide_subscribe_button"],
+      ["hb_likebar", "hide_like_bar"],
+      ["hb_join", "hide_join_button"],
+    ];
+
+    const checkboxById = {};
+    for (const { input } of rows) {
+      checkboxById[input.id] = input;
+    }
+
+    for (const [checkboxId, key] of map) {
+      const input = checkboxById[checkboxId];
+      input.checked = user_data[key] === "on";
+    }
+
+    // Live chat replay section
+    if (user_data.watch_page_config?.hide_live_chat_replay === "on") {
+      checkboxById["hb_livechat_replay"].checked = true;
+    }
+
+    for (const [checkboxId, key] of map) {
+      const input = checkboxById[checkboxId];
+      input.addEventListener("change", () => {
+        user_data[key] = input.checked ? "on" : "off";
+        user_data_api.set();
+        apply_hide_buttons_css();
+      });
+    }
+
+    checkboxById["hb_livechat_replay"].addEventListener("change", () => {
+      user_data.watch_page_config.hide_live_chat_replay = checkboxById[
+        "hb_livechat_replay"
+      ].checked
+        ? "on"
+        : "off";
+      user_data_api.set();
+      if (user_data.watch_page_config.hide_live_chat_replay === "on") {
+        hide_teaser_carousel();
+      } else {
+        const n = unsafeWindow.document.querySelector("#teaser-carousel");
+        if (n) n.style.display = "";
+      }
+    });
+
+    function close() {
+      popup.remove();
+    }
+    closeBtn.addEventListener("click", close);
+    make_popup_draggable(popup, header);
   }
 })();
