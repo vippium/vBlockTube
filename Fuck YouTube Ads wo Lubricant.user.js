@@ -1831,6 +1831,8 @@
           "mobile_yt_home_searching",
           "mobile_yt_watch_searching",
           "yt_shorts",
+          "yt_music_home",
+          "yt_music_watch",
         ].includes(page_type)
       ) {
         clearInterval(interval_id);
@@ -1839,6 +1841,8 @@
       count++;
       const search_selector = href.includes("https://m.youtube.com/")
         ? "input.searchbox-input.title"
+        : href.includes("https://music.youtube.com/")
+        ? "input.ytmusic-search-box"
         : "input.yt-searchbox-input";
       const search_input_node = $(search_selector);
       if (search_input_node) {
@@ -2828,6 +2832,26 @@ label{
       ],
     };
 
+    const music_config = {
+      recommend_btn: [
+        {
+          id: "sponsorblock",
+          title: "btn_sponsorblock_title",
+          tips: "btn_sponsorblock_tips",
+          items: [
+            {
+              tag: "btn_lable_open",
+              value: "on",
+            },
+            {
+              tag: "btn_lable_close",
+              value: "off",
+            },
+          ],
+        },
+      ],
+    };
+
     if (
       ["mobile_yt_home_searching", "mobile_yt_watch_searching"].includes(
         page_type
@@ -2846,7 +2870,15 @@ label{
       "mobile_yt_home_searching",
     ].includes(page_type) && (win_config = home_watch_config);
     ["yt_shorts"].includes(page_type) && (win_config = shorts_config);
-    win_config && win_config.recommend_btn.push(...common_config.recommend_btn);
+
+    // YouTube Music - has its own config, doesn't use common_config
+    if (["yt_music_home", "yt_music_watch"].includes(page_type)) {
+      win_config = music_config;
+    } else {
+      win_config &&
+        win_config.recommend_btn.push(...common_config.recommend_btn);
+    }
+
     if (!win_config) return;
     const popup_node = unsafeWindow.document.getElementById("xxx_popup");
     if (popup_node) {
