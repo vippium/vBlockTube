@@ -2362,32 +2362,58 @@
   cursor:move;
   user-select:none;
   padding:4px 8px;
+  padding-right:60px;
   background-color:#3498db;
   color:#ffffff;
   border-radius:4px 4px 0 0;
   font-weight:bold;
   font-size:13px;
-}
-
-#yt-error-topbar{
-  flex:0 0 auto;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:8px;
-  padding:6px 8px 4px 8px;
-  background-color:#f5f7fb;
-  border-bottom:1px solid #e0e4f0;
+  position:relative;
 }
 
 #yt-error-close,#yt-error-copy{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
   cursor:pointer;
-  background-color:#3498db;
+  background-color:transparent;
   color:#ffffff;
   border:none;
-  padding:4px 12px;
-  border-radius:999px;
-  font-size:12px;
+  padding:0;
+  width:20px;
+  height:20px;
+  border-radius:3px;
+  font-size:16px;
+  font-weight:bold;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background-color 0.2s ease;
+}
+
+#yt-error-copy{
+  right:32px;
+}
+
+#yt-error-copy:hover{
+  background-color:rgba(46,204,113,0.9);
+}
+
+#yt-error-copy:active{
+  background-color:#27ae60;
+}
+
+#yt-error-close{
+  right:8px;
+}
+
+#yt-error-close:hover{
+  background-color:rgba(231,76,60,0.9);
+}
+
+#yt-error-close:active{
+  background-color:#c0392b;
 }
 
 #yt-error-body{
@@ -2416,21 +2442,23 @@
     header.id = "yt-error-header";
     header.textContent = "Information (message)";
 
-    const topbar = unsafeWindow.document.createElement("div");
-    topbar.id = "yt-error-topbar";
     const copyBtn = unsafeWindow.document.createElement("button");
     copyBtn.id = "yt-error-copy";
-    copyBtn.textContent = "Copy & Close";
+    copyBtn.innerHTML = "📋";
+    copyBtn.title = "Copy to clipboard";
+    header.appendChild(copyBtn);
+
     const closeBtn = unsafeWindow.document.createElement("button");
     closeBtn.id = "yt-error-close";
-    closeBtn.textContent = "Close";
-    topbar.append(copyBtn, closeBtn);
+    closeBtn.innerHTML = "×";
+    closeBtn.title = "Close";
+    header.appendChild(closeBtn);
 
     const body = unsafeWindow.document.createElement("div");
     body.id = "yt-error-body";
     body.textContent = msg;
 
-    popup.append(header, topbar, body);
+    popup.append(header, body);
     unsafeWindow.document.body.appendChild(popup);
 
     function close() {
@@ -2473,32 +2501,44 @@
   cursor:move;
   user-select:none;
   padding:4px 8px;
+  padding-right:32px;
   background-color:#3498db;
   color:#ffffff;
   border-radius:4px 4px 0 0;
   font-weight:bold;
   font-size:13px;
   text-align:left;
-}
-
-.popup-topbar{
-  flex:0 0 auto;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:6px 8px 4px 8px;
-  background-color:#f5f7fb;
-  border-bottom:1px solid #e0e4f0;
+  position:relative;
 }
 
 .popup-close-button{
+  position:absolute;
+  top:50%;
+  right:8px;
+  transform:translateY(-50%);
   cursor:pointer;
-  background-color:#3498db;
+  background-color:transparent;
   color:#ffffff;
   border:none;
-  padding:4px 12px;
-  border-radius:999px;
-  font-size:12px;
+  padding:0;
+  width:20px;
+  height:20px;
+  border-radius:3px;
+  font-size:16px;
+  font-weight:bold;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background-color 0.2s ease;
+}
+
+.popup-close-button:hover{
+  background-color:rgba(231,76,60,0.9);
+}
+
+.popup-close-button:active{
+  background-color:#c0392b;
 }
 
 .popup-body{
@@ -2821,12 +2861,11 @@ label{
     header.className = "popup-header";
     header.textContent = flag_info.config_info || "Script Settings";
 
-    const topbar = unsafeWindow.document.createElement("div");
-    topbar.className = "popup-topbar";
     const closeButton = unsafeWindow.document.createElement("button");
     closeButton.className = "popup-close-button";
-    closeButton.textContent = "Close";
-    topbar.appendChild(closeButton);
+    closeButton.innerHTML = "×";
+    closeButton.title = "Close";
+    header.appendChild(closeButton);
 
     const body = unsafeWindow.document.createElement("div");
     body.className = "popup-body";
@@ -2898,7 +2937,7 @@ label{
     item_group.append(...item_groups);
 
     body.appendChild(item_group);
-    popup.append(header, topbar, body);
+    popup.append(header, body);
     unsafeWindow.document.body.append(popup);
 
     function remove_popup_hander(event) {
@@ -5717,31 +5756,43 @@ label{
   cursor:move;
   user-select:none;
   padding:4px 8px;
+  padding-right:32px;
   background-color:#3498db;
   color:#ffffff;
   border-radius:4px 4px 0 0;
   font-weight:bold;
   font-size:13px;
-}
-
-#yt-hide-buttons-topbar{
-  flex:0 0 auto;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:6px 8px 4px 8px;
-  background-color:#f5f7fb;
-  border-bottom:1px solid #e0e4f0;
+  position:relative;
 }
 
 #yt-hide-buttons-close{
+  position:absolute;
+  top:50%;
+  right:8px;
+  transform:translateY(-50%);
   cursor:pointer;
-  background-color:#3498db;
+  background-color:transparent;
   color:#ffffff;
   border:none;
-  padding:4px 12px;
-  border-radius:999px;
-  font-size:12px;
+  padding:0;
+  width:20px;
+  height:20px;
+  border-radius:3px;
+  font-size:16px;
+  font-weight:bold;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background-color 0.2s ease;
+}
+
+#yt-hide-buttons-close:hover{
+  background-color:rgba(231,76,60,0.9);
+}
+
+#yt-hide-buttons-close:active{
+  background-color:#c0392b;
 }
 
 #yt-hide-buttons-body{
@@ -5776,12 +5827,11 @@ label{
     header.id = "yt-hide-buttons-header";
     header.textContent = "Watch buttons";
 
-    const topbar = unsafeWindow.document.createElement("div");
-    topbar.id = "yt-hide-buttons-topbar";
     const closeBtn = unsafeWindow.document.createElement("button");
     closeBtn.id = "yt-hide-buttons-close";
-    closeBtn.textContent = "Close";
-    topbar.appendChild(closeBtn);
+    closeBtn.innerHTML = "×";
+    closeBtn.title = "Close";
+    header.appendChild(closeBtn);
 
     const body = unsafeWindow.document.createElement("div");
     body.id = "yt-hide-buttons-body";
@@ -5816,7 +5866,7 @@ label{
       body.appendChild(div);
     }
 
-    popup.append(header, topbar, body);
+    popup.append(header, body);
     unsafeWindow.document.body.appendChild(popup);
 
     const map = [
