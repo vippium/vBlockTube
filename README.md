@@ -40,7 +40,8 @@
 - **Content Recommendations**: You can toggle the display of various content sections such as trending videos, movie recommendations, game hub, etc.
 - **Video Playback**: Removes all ads during video playback and cleans up recommended video lists.
 - **Short Videos**: Automatically scroll through short videos and disable looping of Shorts.
-- **Download Videos/Audio**: Allows easy downloading of videos and audio from YouTube.
+- **Sponsorblock**: Skip unwanted sections or video parts with it.
+- **Action bar buttons visibility**: Keep only required buttons on watch page, removing the clutter.
   
 ---
 
@@ -51,7 +52,7 @@ There are three primary options that you can control through YouTube's search ba
 - **2333**: Opens a dialog box with various script options.
 - **2444**: Displays information about the current script settings.
 - **2555**: Resets all script configurations to default.
-- **2666**: Toggle visibility of buttons on the Watch page.
+- **2666**: Toggle visibility of Watch Page elements.
 
 ---
 
@@ -95,6 +96,7 @@ Feel free to open issues or pull requests if you encounter bugs or want to contr
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
 
 
