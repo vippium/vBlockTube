@@ -1992,7 +1992,7 @@
         debugger_fun_name = tmp;
       }
     }
-    log(`debugger_fun_name： ${debugger_fun_name}`, 0);
+    log(`debugger_fun_name: ${debugger_fun_name}`, 0);
     const debugger_config_info = {
       ytInitialPlayerResponse: debugger_ytInitialPlayerResponse,
       ytInitialData: debugger_ytInitialData,
