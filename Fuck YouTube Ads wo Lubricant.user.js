@@ -4326,6 +4326,7 @@ label{
           hide_like_bar: "off",
           hide_join_button: "off",
           hide_ask_button: "off",
+          hide_download_button: "off",
           login: false,
         };
         let diff = false;
@@ -4428,6 +4429,7 @@ label{
           "hide_like_bar",
           "hide_join_button",
           "hide_ask_button",
+          "hide_download_button",
           "global_shorts_block",
         ];
         for (const key of newHideKeys) {
@@ -5691,72 +5693,64 @@ label{
   function apply_hide_buttons_css() {
     const rules = [];
 
-    if (user_data.hide_all_buttons === "on") {
-      rules.push("ytd-watch-metadata #actions { display: none !important; }");
-    } else {
-      if (user_data.hide_ask_button === "on") {
-        rules.push('button[aria-label="Ask"] { display: none !important; }');
-
-        if (user_data.hide_share_button === "on") {
-          rules.push(
-            "#actions #menu ytd-menu-renderer > yt-button-view-model { display: none !important; }"
-          );
-          rules.push(
-            'button[aria-label="Share"] { display: none !important; }'
-          );
-        }
-
-        if (user_data.hide_thanks_button === "on") {
-          rules.push(
-            'button[aria-label="Thanks"] { display: none !important; }'
-          );
-        }
-
-        if (user_data.hide_clip_button === "on") {
-          rules.push('button[aria-label="Clip"] { display: none !important; }');
-        }
-
-        if (user_data.hide_more_actions_button === "on") {
-          rules.push(
-            "yt-button-shape#button-shape { display: none !important; }"
-          );
-          rules.push(
-            'button[aria-label="More actions"] { display: none !important; }'
-          );
-        }
-
-        if (user_data.hide_save_button === "on") {
-          rules.push(
-            'button[aria-label="Save to playlist"] { display: none !important; }'
-          );
-        }
-
-        if (user_data.hide_subscribe_button === "on") {
-          rules.push("#subscribe-button { display: none !important; }");
-        }
-
-        if (user_data.hide_like_bar === "on") {
-          rules.push(
-            ".ytSegmentedLikeDislikeButtonViewModelSegmentedButtonsWrapper { display: none !important; }"
-          );
-        }
-
-        if (user_data.hide_join_button === "on") {
-          rules.push("#sponsor-button { display: none !important; }");
-        }
-      }
-
-      let css = rules.join("\n");
-      let styleEl = unsafeWindow.document.getElementById(
-        "yt-hide-buttons-style"
-      );
-      if (!styleEl) {
-        styleEl = unsafeWindow.document.createElement("style");
-        styleEl.id = "yt-hide-buttons-style";
-        unsafeWindow.document.head.appendChild(styleEl);
-      }
-      styleEl.textContent = css;
+    if (user_data.hide_ask_button === "on") {
+      rules.push('button[aria-label="Ask"] { display: none !important; }');
     }
+
+    if (user_data.hide_download_button === "on") {
+      rules.push('button[aria-label="Download"] { display: none !important; }');
+    }
+
+    if (user_data.hide_share_button === "on") {
+      rules.push(
+        "#actions #menu ytd-menu-renderer > yt-button-view-model { display: none !important; }"
+      );
+      rules.push('button[aria-label="Share"] { display: none !important; }');
+    }
+
+    if (user_data.hide_thanks_button === "on") {
+      rules.push('button[aria-label="Thanks"] { display: none !important; }');
+    }
+
+    if (user_data.hide_clip_button === "on") {
+      rules.push('button[aria-label="Clip"] { display: none !important; }');
+    }
+
+    if (user_data.hide_more_actions_button === "on") {
+      rules.push("yt-button-shape#button-shape { display: none !important; }");
+      rules.push(
+        'button[aria-label="More actions"] { display: none !important; }'
+      );
+    }
+
+    if (user_data.hide_save_button === "on") {
+      rules.push(
+        'button[aria-label="Save to playlist"] { display: none !important; }'
+      );
+    }
+
+    if (user_data.hide_subscribe_button === "on") {
+      rules.push("#subscribe-button { display: none !important; }");
+    }
+
+    if (user_data.hide_like_bar === "on") {
+      rules.push(
+        ".ytSegmentedLikeDislikeButtonViewModelSegmentedButtonsWrapper { display: none !important; }"
+      );
+    }
+
+    if (user_data.hide_join_button === "on") {
+      rules.push("#sponsor-button { display: none !important; }");
+    }
+
+    let css = rules.join("\n");
+    let styleEl = unsafeWindow.document.getElementById("yt-hide-buttons-style");
+    if (!styleEl) {
+      styleEl = unsafeWindow.document.createElement("style");
+      styleEl.id = "yt-hide-buttons-style";
+      unsafeWindow.document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
   }
 
   function display_hide_buttons_win() {
@@ -5883,6 +5877,7 @@ label{
 
     const rows = [
       row("hb_ask", "Ask (Gemini)"),
+      row("hb_download", "Download"),
       row("hb_share", "Share"),
       row("hb_thanks", "Thanks"),
       row("hb_clip", "Clip"),
@@ -5903,6 +5898,7 @@ label{
 
     const map = [
       ["hb_ask", "hide_ask_button"],
+      ["hb_download", "hide_download_button"],
       ["hb_share", "hide_share_button"],
       ["hb_thanks", "hide_thanks_button"],
       ["hb_clip", "hide_clip_button"],
