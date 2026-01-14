@@ -95,8 +95,4 @@ Feel free to open issues or pull requests if you encounter bugs or want to contr
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-
-
-
+This project is licensed under the Copyright License - see the [LICENSE](LICENSE) file for details.
