@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    https://www.github.com/vippium/
-// @version      1.6.0
+// @version      1.7.1
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -11,6 +11,7 @@
 // @exclude      https://www.youtube.com/live_chat*
 // @exclude      https://www.youtube.com/embed*
 // @connect      api.sponsor.ajay.app
+// @connect      fetchtiumv2.up.railway.app
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
@@ -135,9 +136,9 @@
       // check_update();
       on_page_change();
       init_create_button_observer();
+      init_download_button_interceptor();
     });
 
-    // Global shorts blocker observer
     init_global_shorts_blocker();
 
     isinint = true;
@@ -349,7 +350,7 @@
               if (newValue.set) {
                 const origin_set = newValue.set;
                 newValue.set = function () {
-                  // hook ytmusic initial data YTMUSIC_INITIAL_DATA
+                  // hook YTMUSIC_INITIAL_DATA
                   if (arguments?.[0].YTMUSIC_INITIAL_DATA) {
                     const yt_music_init_data =
                       arguments[0].YTMUSIC_INITIAL_DATA;
@@ -529,7 +530,6 @@
                     "browse"
                   ).ytInitialData_rule;
                 }
-                // Ignore music homepage and movie homepage
                 if (
                   !rule &&
                   (["yt_home", "mobile_yt_home"].includes(page_type) ||
@@ -634,7 +634,6 @@
               const result_type = typeof result;
               try {
                 if (url.includes("youtubei/v1/player")) {
-                  // music_watch shorts
                   if (result_type !== "string") {
                     log(`XHR ${url} response is not a string!`, 0);
                     return result;
@@ -803,7 +802,6 @@
     hide_create_button();
     element_monitor();
 
-    // SponsorBlock
     init_sponsorblock();
 
     apply_hide_buttons_css();
@@ -1860,7 +1858,6 @@
             ].includes(this.value)
           ) {
             setTimeout(() => {
-              // Close search dropdown/suggestions
               search_input_node.blur();
 
               if (search_input_node.value === open_config_keyword) {
@@ -2021,7 +2018,6 @@
       }
     });
 
-    // Mobile / grid-shelf based "Shorts" shelves (your grid-shelf-view-model example)
     $$("grid-shelf-view-model").forEach((shelf) => {
       const titleSpan = shelf.querySelector(
         ".yt-shelf-header-layout__title .yt-core-attributed-string"
@@ -5514,7 +5510,6 @@ label{
       }, 800);
     }
 
-    // Listen to YouTube navigation events
     unsafeWindow.document.addEventListener(
       "yt-navigate-finish",
       handleNavigation
@@ -5533,6 +5528,534 @@ label{
     }, 3000);
 
     sb_log("SponsorBlock navigation listeners attached");
+  }
+
+  /* ====== DOWNLOAD VIDEO INTEGRATION ====== */
+
+  function get_downaria_api_key() {
+    return GM_getValue("downaria_api_key", "");
+  }
+
+  function set_downaria_api_key(key) {
+    GM_setValue("downaria_api_key", key);
+  }
+
+  function get_current_video_id() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get("v");
+    if (videoId) return videoId;
+
+    const metaVideoId = document.querySelector('meta[itemprop="videoId"]');
+    if (metaVideoId) return metaVideoId.content;
+
+    // Try from URL path for shorts
+    const match = window.location.pathname.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
+    if (match) return match[1];
+
+    return null;
+  }
+
+  function create_download_popup(videoId) {
+    const apiKey = get_downaria_api_key();
+
+    if (!apiKey) {
+      show_api_key_prompt();
+      return;
+    }
+
+    const existingModal = document.getElementById("downaria-modal");
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    const modal = document.createElement("div");
+    modal.id = "downaria-modal";
+    modal.innerHTML = `
+      <div class="downaria-modal-overlay">
+        <div class="downaria-modal-content">
+          <div class="downaria-modal-header">
+            <h2>Download Video</h2>
+            <button class="downaria-close-btn">&times;</button>
+          </div>
+          <div class="downaria-modal-body">
+            <div class="downaria-loading">Fetching download options...</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const style = document.createElement("style");
+    style.textContent = `
+      .downaria-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+      }
+      .downaria-modal-content {
+        background: #282828;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+      .downaria-modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #3f3f3f;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .downaria-modal-header h2 {
+        margin: 0;
+        color: #fff;
+        font-size: 20px;
+      }
+      .downaria-close-btn {
+        background: none;
+        border: none;
+        color: #aaa;
+        font-size: 28px;
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        line-height: 1;
+      }
+      .downaria-close-btn:hover {
+        color: #fff;
+      }
+      .downaria-modal-body {
+        padding: 20px;
+      }
+      .downaria-loading {
+        text-align: center;
+        color: #aaa;
+        padding: 40px 20px;
+      }
+      .downaria-error {
+        color: #ff6b6b;
+        padding: 20px;
+        text-align: center;
+      }
+      .downaria-format-section {
+        margin-bottom: 20px;
+      }
+      .downaria-format-title {
+        color: #fff;
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .downaria-download-btn {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: #3ea6ff;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+      }
+      .downaria-download-btn:hover {
+        background: #2d8fd8;
+      }
+      .downaria-download-btn.processing {
+        background: #666;
+        cursor: not-allowed;
+      }
+      .downaria-info {
+        color: #aaa;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+    `;
+
+    modal.appendChild(style);
+    document.body.appendChild(modal);
+
+    modal.querySelector(".downaria-close-btn").addEventListener("click", () => {
+      modal.remove();
+    });
+
+    modal
+      .querySelector(".downaria-modal-overlay")
+      .addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) {
+          modal.remove();
+        }
+      });
+
+    fetch_downaria_options(videoId, modal);
+  }
+
+  function fetch_downaria_options(videoId, modal) {
+    const apiKey = get_downaria_api_key();
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const apiUrl = `https://fetchtiumv2.up.railway.app/api/v1/extract`;
+
+    GM_xmlhttpRequest({
+      method: "POST",
+      url: apiUrl,
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey,
+      },
+      data: JSON.stringify({ url: videoUrl }),
+      onload: function (response) {
+        console.log("API Response Status:", response.status);
+        console.log("API Response Text:", response.responseText);
+
+        try {
+          const data = JSON.parse(response.responseText);
+          console.log("Parsed API Data:", data);
+
+          if (data.success && data.items) {
+            render_download_options(data, modal, videoId);
+          } else {
+            show_error(
+              modal,
+              "Failed to fetch download options. Error: " +
+                (data.error || data.message || "Unknown error") +
+                " (Status: " +
+                response.status +
+                ")"
+            );
+          }
+        } catch (e) {
+          console.error("Parse error:", e);
+          show_error(
+            modal,
+            "Error parsing response: " +
+              e.message +
+              " - Status: " +
+              response.status
+          );
+        }
+      },
+      onerror: function (error) {
+        console.error("Network error:", error);
+        show_error(
+          modal,
+          "Network error. Please check your connection and try again."
+        );
+      },
+    });
+  }
+
+  function render_download_options(data, modal, videoId) {
+    const modalBody = modal.querySelector(".downaria-modal-body");
+
+    if (!data.items || data.items.length === 0) {
+      modalBody.innerHTML =
+        '<div class="downaria-error">No download options available for this video.</div>';
+      return;
+    }
+    const videoItems = data.items.filter(
+      (item) => item.type === "video" || item.type === "video/mp4"
+    );
+    const audioItems = data.items.filter((item) => item.type === "audio");
+
+    let audioUrl = "";
+    if (
+      audioItems.length > 0 &&
+      audioItems[0].sources &&
+      audioItems[0].sources.length > 0
+    ) {
+      audioUrl = audioItems[0].sources[0].url;
+    }
+
+    let html = "";
+
+    if (audioItems.length > 0 && audioItems[0].sources) {
+      html += `
+        <div class="downaria-format-section">
+          <div class="downaria-format-title">🎵 Audio Only</div>
+      `;
+
+      audioItems[0].sources.forEach((source) => {
+        if (source.extension && source.url) {
+          const format = source.extension.toUpperCase();
+          html += `<button class="downaria-download-btn" data-type="audio" data-format="${source.extension}" data-url="${source.url}" data-filename="${source.filename}">Download ${format}</button>`;
+        }
+      });
+
+      html += `</div>`;
+    }
+
+    if (videoItems.length > 0 && videoItems[0].sources) {
+      html += `
+        <div class="downaria-format-section">
+          <div class="downaria-format-title">🎬 Video</div>
+      `;
+
+      const qualityOrder = ["1080p", "720p", "480p", "360p", "240p", "144p"];
+      const sources = videoItems[0].sources.sort((a, b) => {
+        const aIdx = qualityOrder.indexOf(a.quality);
+        const bIdx = qualityOrder.indexOf(b.quality);
+        return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+      });
+
+      sources.forEach((source) => {
+        if (source.quality && source.url) {
+          const needsMerge = source.needsMerge
+            ? " (HD - Merging required)"
+            : "";
+          html += `
+            <button class="downaria-download-btn"
+                    data-type="video"
+                    data-quality="${source.quality}"
+                    data-needs-merge="${source.needsMerge || false}"
+                    data-url="${source.url}"
+                    data-audio-url="${audioUrl}"
+                    data-filename="${source.filename}">
+              Download ${source.quality} MP4${needsMerge}
+            </button>
+          `;
+        }
+      });
+
+      html += `</div>`;
+    }
+
+    if (!html) {
+      html =
+        '<div class="downaria-error">No download options available for this video.</div>';
+    } else {
+      html += `<div class="downaria-info">ℹ️ Some HD videos may require audio merging which may take a moment.</div>`;
+    }
+
+    modalBody.innerHTML = html;
+
+    modalBody.querySelectorAll(".downaria-download-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        handle_download_v2(btn, videoId);
+      });
+    });
+  }
+
+  function handle_download_v2(button, videoId) {
+    if (button.classList.contains("processing")) return;
+
+    button.classList.add("processing");
+    const originalText = button.textContent;
+    button.textContent = "Processing...";
+
+    const type = button.getAttribute("data-type");
+    const url = button.getAttribute("data-url");
+    const audioUrl = button.getAttribute("data-audio-url");
+    const filename = button.getAttribute("data-filename");
+    const quality = button.getAttribute("data-quality");
+    const needsMerge = button.getAttribute("data-needs-merge") === "true";
+
+    if (type === "audio") {
+      trigger_download(url, filename);
+      button.classList.remove("processing");
+      button.textContent = "✓ " + originalText;
+      setTimeout(() => {
+        button.textContent = originalText;
+      }, 2000);
+    } else if (type === "video") {
+      if (needsMerge) {
+        merge_and_download_v2(
+          videoId,
+          quality,
+          url,
+          audioUrl,
+          filename,
+          button,
+          originalText
+        );
+      } else {
+        trigger_download(url, filename);
+        button.classList.remove("processing");
+        button.textContent = "✓ " + originalText;
+        setTimeout(() => {
+          button.textContent = originalText;
+        }, 2000);
+      }
+    }
+  }
+
+  function merge_and_download_v2(
+    videoId,
+    quality,
+    videoUrl,
+    audioUrl,
+    filename,
+    button,
+    originalText
+  ) {
+    const apiKey = get_downaria_api_key();
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const mergeUrl = `https://fetchtiumv2.up.railway.app/api/v1/merge?url=${encodeURIComponent(
+      youtubeUrl
+    )}&quality=${quality}`;
+
+    button.textContent = "Merging video + audio...";
+
+    console.log("Merge URL:", mergeUrl);
+    console.log("Quality:", quality);
+    console.log("YouTube URL:", youtubeUrl);
+
+    GM_xmlhttpRequest({
+      method: "GET",
+      url: mergeUrl,
+      headers: {
+        "X-API-Key": apiKey,
+      },
+      responseType: "blob",
+      onload: function (response) {
+        console.log("Merge Response Status:", response.status);
+
+        if (response.status === 200) {
+          const blob = response.response;
+          const url = URL.createObjectURL(blob);
+          trigger_download(url, filename);
+          button.textContent = "✓ " + originalText;
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            button.textContent = originalText;
+          }, 1000);
+        } else {
+          console.error("Merge failed with status:", response.status);
+          try {
+            const errorData = JSON.parse(response.responseText);
+            console.error("Merge error details:", errorData);
+            button.textContent =
+              "✗ Merge failed: " +
+              (errorData.error?.message ||
+                errorData.message ||
+                "Status " + response.status);
+          } catch (e) {
+            button.textContent =
+              "✗ Merge failed (Status: " + response.status + ")";
+          }
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove("processing");
+          }, 3000);
+        }
+      },
+      onerror: function (error) {
+        console.error("Network error during merge:", error);
+        button.textContent = "✗ Network error";
+        button.classList.remove("processing");
+        setTimeout(() => {
+          button.textContent = originalText;
+        }, 2000);
+      },
+    });
+  }
+
+  function trigger_download(url, filename) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function show_error(modal, message) {
+    const modalBody = modal.querySelector(".downaria-modal-body");
+    modalBody.innerHTML = `
+      <div class="downaria-error">${message}</div>
+      <button class="downaria-settings-btn" style="color: #3ea6ff; background: none; border: none; cursor: pointer; text-decoration: underline; font-size: 12px; padding: 0; margin-top: 10px;">Change API Key</button>
+    `;
+    modalBody
+      .querySelector(".downaria-settings-btn")
+      ?.addEventListener("click", () => {
+        modal.remove();
+        show_api_key_prompt();
+      });
+  }
+
+  function show_api_key_prompt() {
+    const currentKey = get_downaria_api_key();
+    const newKey = prompt(
+      "Enter your Fetchtium API Key:\n\n" +
+        "Format: ftm_xxxxxxxxxxxxxxxx\n\n" +
+        "The developer provided this development API endpoint.\n" +
+        "Contact the developer for an API key.",
+      currentKey
+    );
+
+    if (newKey !== null && newKey.trim() !== "") {
+      set_downaria_api_key(newKey.trim());
+      alert("API key saved! You can now download videos.");
+    }
+  }
+
+  function init_download_button_interceptor() {
+    const observer = new MutationObserver(() => {
+      const downloadButtons = document.querySelectorAll(
+        "ytd-download-button-renderer button, " +
+          'button[aria-label*="Download"], ' +
+          'button[aria-label*="download"], ' +
+          'ytd-button-renderer a[href*="/offline/"]'
+      );
+
+      downloadButtons.forEach((btn) => {
+        if (btn.hasAttribute("data-downaria-intercepted")) return;
+        btn.setAttribute("data-downaria-intercepted", "true");
+
+        btn.addEventListener(
+          "click",
+          (e) => {
+            const videoId = get_current_video_id();
+            if (videoId) {
+              e.preventDefault();
+              e.stopPropagation();
+              create_download_popup(videoId);
+            }
+          },
+          true
+        );
+      });
+
+      const mobileDownloadItems = document.querySelectorAll(
+        'ytm-menu-item[data-label*="Download"], ' +
+          'ytm-menu-item[data-label*="download"]'
+      );
+
+      mobileDownloadItems.forEach((item) => {
+        if (item.hasAttribute("data-downaria-intercepted")) return;
+        item.setAttribute("data-downaria-intercepted", "true");
+
+        item.addEventListener(
+          "click",
+          (e) => {
+            const videoId = get_current_video_id();
+            if (videoId) {
+              e.preventDefault();
+              e.stopPropagation();
+              create_download_popup(videoId);
+            }
+          },
+          true
+        );
+      });
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    log("Download button interceptor initialized");
   }
 
   /* ====== HIDE CREATE BUTTON ====== */
@@ -5596,7 +6119,6 @@ label{
         }
       });
 
-      // Links to /shorts/ inside regular grids
       document
         .querySelectorAll('a[href^="/shorts/"]:not([data-processed])')
         .forEach((link) => {
@@ -5639,7 +6161,6 @@ label{
           shelf.setAttribute("data-processed", "true");
         });
 
-      // Fallback: any rich section whose header span contains "Shorts"
       document
         .querySelectorAll("span:not([data-processed])")
         .forEach((span) => {
@@ -5670,7 +6191,7 @@ label{
       }
     });
 
-    // Initial run
+    // (Initial run);
     blockShorts();
 
     observer.observe(document, {
@@ -5680,7 +6201,6 @@ label{
       characterData: false,
     });
 
-    // Expose for debugging / manual trigger if needed
     unsafeWindow.__yt_global_shorts_blocker = {
       reRun: blockShorts,
     };
