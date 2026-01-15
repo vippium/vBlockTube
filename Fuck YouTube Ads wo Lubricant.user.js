@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    https://www.github.com/vippium/
-// @version      1.7.1
-// @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
+// @version      1.6.2
+// @description  Very Useful for Ad-free experience with xtra add-ons (Stay Away M*therF@ckers.)
 // @author       vippium
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -27,7 +27,7 @@
 // @homepageURL  https://github.com/vippium/vBlockTube
 // @downloadURL  https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/Fuck YouTube Ads wo Lubricant.user.js
 // @updateURL    https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/Fuck YouTube Ads wo Lubricant.user.js
-// @license      MIT
+// @copyright    Copyright 2025, vippium
 // ==/UserScript==
 
 (function () {
