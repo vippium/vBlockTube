@@ -42,7 +42,7 @@
 - **Short Videos**: Automatically scroll through short videos and disable looping of Shorts.
 - **Sponsorblock**: Skip unwanted sections or video parts with it.
 - **Action bar buttons visibility**: Keep only required buttons on watch page, removing the clutter.
-  
+- **Video Downloads**: Download YouTube videos in audio/video format using DownAria integration (requires API key). Integrated in YT's own Download button, for better usability.
 ---
 
 ## Script Options
