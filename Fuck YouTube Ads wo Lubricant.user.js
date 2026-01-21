@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    https://www.github.com/vippium/
-// @version      1.6.2
+// @version      1.6.3
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -235,213 +235,7 @@
     log("[Remix/Duet Remover] Initialized", 0);
   }
 
-  function init_disable_saturated_hover() {
-    const detectDark = () => {
-      const html = unsafeWindow.document.documentElement;
-      if (html.hasAttribute("dark") || html.classList.contains("dark-theme"))
-        return true;
-      if (html.hasAttribute("light") || html.classList.contains("light-theme"))
-        return false;
-
-      try {
-        const cs = getComputedStyle(html);
-        const bg = (
-          cs.getPropertyValue("--yt-spec-base-background") || ""
-        ).trim();
-        if (bg.startsWith("rgb")) {
-          const nums = bg.match(/\d+/g);
-          if (nums && nums.length >= 3) {
-            const r = Number(nums[0]),
-              g = Number(nums[1]),
-              b = Number(nums[2]);
-            return (r + g + b) / 3 < 60;
-          }
-        }
-      } catch (e) {}
-      return false;
-    };
-
-    const buildCss = (d) => {
-      return `
-html {
-  --ytc-base-background:${d ? "#0f0f0f" : "#fff"};
-  --ytc-additive-background:${d ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"};
-  --ytc-text-primary:${d ? "#f1f1f1" : "#0f0f0f"};
-  --ytc-text-secondary:${d ? "#aaa" : "#606060"};
-
-  --yt-spec-base-background:var(--yt-spec-base-background,var(--ytc-base-background));
-  --yt-spec-additive-background:var(--yt-spec-additive-background,var(--ytc-additive-background));
-  --yt-spec-text-primary:var(--yt-spec-text-primary,var(--ytc-text-primary));
-  --yt-spec-text-secondary:var(--yt-spec-text-secondary,var(--ytc-text-secondary));
-
-  --yt-active-playlist-panel-background-color: var(--yt-spec-additive-background);
-  --yt-lightsource-primary-title-color: var(--ytc-text-primary);
-  --yt-lightsource-secondary-title-color: var(--ytc-text-secondary);
-  --iron-icon-fill-color: var(--yt-lightsource-primary-title-color);
-}
-
-.yt-spec-touch-feedback-shape__hover-effect,
-.yt-spec-touch-feedback-shape__stroke,
-.yt-spec-touch-feedback-shape__fill {
-  display: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-ytd-rich-item-renderer.ytd-rich-item-renderer-highlight {
-  background: transparent !important;
-  box-shadow: none !important;
-  --yt-spec-outline: transparent !important;
-}
-
-ytd-rich-grid-renderer #video-title,
-.yt-lockup-metadata-view-model__title,
-.yt-lockup-metadata-view-model__title a {
-  color: var(--yt-spec-text-primary, var(--ytc-text-primary)) !important;
-}
-
-.yt-lockup-metadata-view-model__metadata,
-.yt-lockup-metadata-view-model__metadata span,
-#metadata-line span {
-  color: var(--yt-spec-text-secondary, var(--ytc-text-secondary)) !important;
-}
-
-ytd-watch-metadata .yt-core-attributed-string--link-inherit-color:not(:has(a)) {
-  color: var(--yt-spec-text-primary, var(--ytc-text-primary)) !important;
-}
-
-ytd-watch-metadata #description,
-ytd-video-secondary-info-renderer #description,
-ytd-watch-info-text,
-#metadata.ytd-watch-info-text,
-#metadata-line.ytd-video-primary-info-renderer span,
-#snippet-text, #snippet-text *,
-#attributed-snippet-text, #attributed-snippet-text * {
-  color: var(--yt-spec-text-primary, var(--ytc-text-primary)) !important;
-}
-
-#snippet-text:hover, #snippet-text *:hover,
-#attributed-snippet-text:hover, #attributed-snippet-text *:hover,
-ytd-watch-info-text *:hover {
-  color: var(--yt-spec-text-primary, var(--ytc-text-primary)) !important;
-  filter: none !important;
-  opacity: 1 !important;
-}
-
-.yt-core-attributed-string--highlight-text-decorator > a.yt-core-attributed-string__link--call-to-action-color,
-.yt-core-attributed-string--link-inherit-color .yt-core-attributed-string--highlight-text-decorator > a.yt-core-attributed-string__link--call-to-action-color {
-  color: var(--yt-spec-text-primary, var(--ytc-text-primary)) !important;
-}
-
-ytd-watch-metadata :not(.yt-core-attributed-string--highlight-text-decorator) > .yt-core-attributed-string__link--call-to-action-color,
-#snippet-text :not(.yt-core-attributed-string--highlight-text-decorator) > .yt-core-attributed-string__link--call-to-action-color,
-#attributed-snippet-text :not(.yt-core-attributed-string--highlight-text-decorator) > .yt-core-attributed-string__link--call-to-action-color {
-  color: var(--yt-spec-call-to-action, #3ea6ff) !important;
-}
-
-ytd-watch-metadata, .ytd-watch-metadata {
-  --yt-saturated-base-background: var(--ytc-base-background);
-  --yt-saturated-raised-background: var(--yt-spec-additive-background,var(--ytc-additive-background));
-  --yt-saturated-additive-background: var(--yt-spec-additive-background,var(--ytc-additive-background));
-  --yt-saturated-text-primary: var(--yt-spec-text-primary,var(--ytc-text-primary));
-  --yt-saturated-text-secondary: var(--yt-spec-text-secondary,var(--ytc-text-secondary));
-  --yt-saturated-overlay-background: var(--yt-spec-additive-background,var(--ytc-additive-background));
-  --yt-spec-overlay-background: var(--yt-spec-additive-background,var(--ytc-additive-background));
-  --yt-spec-static-overlay-background-light: var(--yt-spec-additive-background,var(--ytc-additive-background));
-
-  --yt-active-playlist-panel-background-color: var(--yt-spec-additive-background);
-  --yt-lightsource-primary-title-color: var(--ytc-text-primary);
-  --yt-lightsource-secondary-title-color: var(--ytc-text-secondary);
-  --iron-icon-fill-color: var(--yt-lightsource-primary-title-color);
-}
-
-.yt-core-attributed-string--highlight-text-decorator {
-  background-color: var(--yt-spec-static-overlay-background-light, ${
-    d ? "rgba(255,255,255,0.102)" : "rgba(0,0,0,0.051)"
-  }) !important;
-  border-radius: 8px !important;
-  padding-bottom: 1px !important;
-}
-
-.yt-content-metadata-view-model__metadata-text,
-.yt-content-metadata-view-model__metadata-text span,
-.yt-content-metadata-view-model__delimiter {
-  color: var(--yt-spec-text-secondary, var(--ytc-text-secondary)) !important;
-}
-`;
-    };
-
-    const applyStyle = () => {
-      const isDark = detectDark();
-      const css = buildCss(isDark);
-      let styleEl = unsafeWindow.document.getElementById(
-        "no-saturated-hover-style",
-      );
-      if (!styleEl) {
-        styleEl = unsafeWindow.document.createElement("style");
-        styleEl.id = "no-saturated-hover-style";
-        unsafeWindow.document.head.appendChild(styleEl);
-      }
-      styleEl.textContent = css;
-      log("[Saturated Hover] Disabled", 0);
-    };
-
-    applyStyle();
-
-    unsafeWindow.addEventListener("yt-navigate-finish", applyStyle, {
-      passive: true,
-    });
-    unsafeWindow.addEventListener("yt-dark-mode-toggled", applyStyle, {
-      passive: true,
-    });
-  }
-
-  function init_disable_play_on_hover() {
-    if (user_data.disable_play_on_hover !== "on") return;
-
-    const css = `
-      ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-toggle-button-renderer.ytd-thumbnail,
-      ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-time-status-renderer.ytd-thumbnail,
-      ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-endorsement-renderer.ytd-thumbnail,
-      ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-hover-text-renderer.ytd-thumbnail,
-      ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-button-renderer.ytd-thumbnail,
-      ytd-thumbnail[now-playing] ytd-thumbnail-overlay-time-status-renderer.ytd-thumbnail,
-      ytd-thumbnail-overlay-loading-preview-renderer[is-preview-loading],
-      ytd-grid-video-renderer a#thumbnail div#mouseover-overlay,
-      ytd-rich-item-renderer a#thumbnail div#mouseover-overlay,
-      ytd-thumbnail-overlay-loading-preview-renderer,
-      ytd-moving-thumbnail-renderer img#thumbnail,
-      .ytAnimatedThumbnailOverlayViewModelHost,
-      animated-thumbnail-overlay-view-model,
-      ytd-moving-thumbnail-renderer yt-icon,
-      ytd-moving-thumbnail-renderer span,
-      ytd-moving-thumbnail-renderer img,
-      ytd-moving-thumbnail-renderer,
-      #mouseover-overlay,
-      ytd-video-preview,
-      div#video-preview,
-      #video-preview,
-      #preview {
-        display: none !important;
-      }
-    `;
-
-    let styleEl = unsafeWindow.document.getElementById(
-      "disable-play-on-hover-style",
-    );
-    if (!styleEl) {
-      styleEl = unsafeWindow.document.createElement("style");
-      styleEl.id = "disable-play-on-hover-style";
-      unsafeWindow.document.head.appendChild(styleEl);
-    }
-    styleEl.textContent = css;
-    log("[Play on Hover] Disabled", 0);
-  }
-
-  init_disable_play_on_hover();
-
   init();
-
   function init() {
     log("Initialization started!" + href, 0);
     url_observer();
@@ -462,6 +256,17 @@ ytd-watch-metadata, .ytd-watch-metadata {
       init_remove_remix_duet();
       init_disable_ambient_mode();
       init_disable_saturated_hover();
+      init_disable_play_on_hover();
+      init_disable_end_cards();
+
+      const hoverToggleListener = (key, _oldValue, newValue) => {
+        if (key !== channel_id || !newValue) return;
+        user_data = newValue;
+        init_disable_saturated_hover();
+        init_disable_play_on_hover();
+        init_disable_end_cards();
+      };
+      GM_addValueChangeListener(channel_id, hoverToggleListener);
     });
 
     init_global_shorts_blocker();
@@ -3160,6 +2965,20 @@ label{
           ],
         },
         {
+          id: "disable_saturated_hover",
+          title: "Disable Saturated Hover",
+          items: [
+            {
+              tag: "btn_lable_open",
+              value: "on",
+            },
+            {
+              tag: "btn_lable_close",
+              value: "off",
+            },
+          ],
+        },
+        {
           id: "disable_play_on_hover",
           title: "Disable Play on Hover",
           items: [
@@ -3380,6 +3199,131 @@ label{
     user_data[input_obj.parentNode.parentNode.id] = input_obj.value;
     user_data_api.set();
     config_api.config_init(user_data.language);
+  }
+
+  function init_disable_saturated_hover() {
+    const styleId = "no-saturated-hover-style";
+    const removeStyle = () => {
+      const existing = unsafeWindow.document.getElementById(styleId);
+      if (existing) existing.remove();
+    };
+
+    if (user_data.disable_saturated_hover !== "on") {
+      removeStyle();
+      return;
+    }
+
+    const css = `
+.yt-spec-touch-feedback-shape__hover-effect,
+.yt-spec-touch-feedback-shape__stroke,
+.yt-spec-touch-feedback-shape__fill {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+ytd-rich-item-renderer.ytd-rich-item-renderer-highlight {
+  background: transparent !important;
+  box-shadow: none !important;
+  --yt-spec-outline: transparent !important;
+}
+
+.yt-core-attributed-string--highlight-text-decorator {
+  background-color: transparent !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+`;
+
+    let styleEl = unsafeWindow.document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = unsafeWindow.document.createElement("style");
+      styleEl.id = styleId;
+      unsafeWindow.document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
+    log("[Saturated Hover] Disabled", 0);
+  }
+
+  function init_disable_play_on_hover() {
+    const styleId = "disable-play-on-hover-style";
+    const removeStyle = () => {
+      const existing = unsafeWindow.document.getElementById(styleId);
+      if (existing) existing.remove();
+    };
+
+    if (user_data.disable_play_on_hover !== "on") {
+      removeStyle();
+      return;
+    }
+
+    const css = `
+ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-toggle-button-renderer.ytd-thumbnail,
+ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-time-status-renderer.ytd-thumbnail,
+ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-endorsement-renderer.ytd-thumbnail,
+ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-hover-text-renderer.ytd-thumbnail,
+ytd-thumbnail[is-preview-loading] ytd-thumbnail-overlay-button-renderer.ytd-thumbnail,
+ytd-thumbnail[now-playing] ytd-thumbnail-overlay-time-status-renderer.ytd-thumbnail,
+ytd-thumbnail-overlay-loading-preview-renderer[is-preview-loading],
+ytd-grid-video-renderer a#thumbnail div#mouseover-overlay,
+ytd-rich-item-renderer a#thumbnail div#mouseover-overlay,
+ytd-thumbnail-overlay-loading-preview-renderer,
+ytd-moving-thumbnail-renderer img#thumbnail,
+.ytAnimatedThumbnailOverlayViewModelHost,
+animated-thumbnail-overlay-view-model,
+ytd-moving-thumbnail-renderer yt-icon,
+ytd-moving-thumbnail-renderer span,
+ytd-moving-thumbnail-renderer img,
+ytd-moving-thumbnail-renderer,
+#mouseover-overlay,
+ytd-video-preview,
+div#video-preview,
+#video-preview,
+#preview {
+  display: none !important;
+}
+`;
+
+    let styleEl = unsafeWindow.document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = unsafeWindow.document.createElement("style");
+      styleEl.id = styleId;
+      unsafeWindow.document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
+    log("[Play on Hover] Disabled", 0);
+  }
+
+  function init_disable_end_cards() {
+    const styleId = "disable-end-cards-style";
+    const removeStyle = () => {
+      const existing = unsafeWindow.document.getElementById(styleId);
+      if (existing) existing.remove();
+    };
+
+    if (user_data.hide_end_cards !== "on") {
+      removeStyle();
+      return;
+    }
+
+    const css = `
+.ytp-endscreen-container,
+[data-a11y-skip-to-endscreen-button],
+ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
+.ytp-ce-playlist,
+.ytp-ce-element {
+  display: none !important;
+}
+`;
+
+    let styleEl = unsafeWindow.document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = unsafeWindow.document.createElement("style");
+      styleEl.id = styleId;
+      unsafeWindow.document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
+    log("[End Cards] Hidden", 0);
   }
 
   function display_update_win() {
@@ -4649,8 +4593,8 @@ label{
           shorts_add_video_progress: "onTap",
           shorts_dbclick_like: "off",
           shorts_disable_loop_play: "on",
-          disable_play_on_hover: "on",
           sponsorblock: "on",
+          disable_play_on_hover: "off",
           default_quality: "hd1080",
           default_speed: "1",
           hide_remix_duet: "on",
@@ -4676,6 +4620,8 @@ label{
           hide_join_button: "off",
           hide_ask_button: "off",
           hide_download_button: "off",
+          hide_end_cards: "off",
+          disable_saturated_hover: "off",
           login: false,
         };
         let diff = false;
@@ -6259,6 +6205,39 @@ label{
   padding:4px 6px;
   font-size:13px;
 }
+
+.yt-hb-section{
+  border:1px solid #e0e0e0;
+  border-radius:6px;
+  margin:8px 0;
+  overflow:hidden;
+}
+
+.yt-hb-section-header{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  background:#f7f7f7;
+  cursor:pointer;
+  user-select:none;
+  font-weight:600;
+  font-size:13px;
+}
+
+.yt-hb-caret{
+  transition:transform 0.2s ease;
+  display:inline-block;
+  font-size:12px;
+}
+
+.yt-hb-section-body{
+  padding:6px 8px 8px 8px;
+}
+
+.yt-hb-section-body.collapsed{
+  display:none;
+}
 `;
     const style = unsafeWindow.document.createElement("style");
     style.textContent = css;
@@ -6269,7 +6248,7 @@ label{
 
     const header = unsafeWindow.document.createElement("div");
     header.id = "yt-hide-buttons-header";
-    header.textContent = "Watch buttons";
+    header.textContent = "Watch Page Tweaks";
 
     const closeBtn = unsafeWindow.document.createElement("button");
     closeBtn.id = "yt-hide-buttons-close";
@@ -6311,7 +6290,7 @@ label{
       return { div, input };
     }
 
-    const rows = [
+    const actionRows = [
       row("hb_ask", "Ask (Gemini)"),
       row("hb_download", "Download"),
       row("hb_share", "Share"),
@@ -6322,8 +6301,14 @@ label{
       row("hb_subscribe", "Subscribe+Bell"),
       row("hb_likebar", "Like/Dislike bar"),
       row("hb_join", "Join"),
+    ];
+
+    const otherRows = [
+      row("hb_endcards", "End cards (overlay)"),
       row("hb_livechat_replay", "Live chat replay teaser"),
     ];
+
+    const rows = [...actionRows, ...otherRows];
 
     const qualityRow = selectRow("sel_quality", "Default quality", [
       { text: "Off", value: "off" },
@@ -6348,7 +6333,34 @@ label{
 
     body.append(qualityRow.div, speedRow.div);
 
-    for (const { div } of rows) {
+    const buttonsSection = unsafeWindow.document.createElement("div");
+    buttonsSection.className = "yt-hb-section";
+
+    const sectionHeader = unsafeWindow.document.createElement("div");
+    sectionHeader.className = "yt-hb-section-header";
+    const caret = unsafeWindow.document.createElement("span");
+    caret.className = "yt-hb-caret";
+    caret.textContent = "▾";
+    const sectionTitle = unsafeWindow.document.createElement("span");
+    sectionTitle.textContent = "Action bar buttons";
+    sectionHeader.append(caret, sectionTitle);
+
+    const sectionBody = unsafeWindow.document.createElement("div");
+    sectionBody.className = "yt-hb-section-body";
+
+    for (const { div } of actionRows) {
+      sectionBody.appendChild(div);
+    }
+
+    sectionHeader.addEventListener("click", () => {
+      const collapsed = sectionBody.classList.toggle("collapsed");
+      caret.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0deg)";
+    });
+
+    buttonsSection.append(sectionHeader, sectionBody);
+    body.append(buttonsSection);
+
+    for (const { div } of otherRows) {
       body.appendChild(div);
     }
 
@@ -6366,6 +6378,7 @@ label{
       ["hb_subscribe", "hide_subscribe_button"],
       ["hb_likebar", "hide_like_bar"],
       ["hb_join", "hide_join_button"],
+      ["hb_endcards", "hide_end_cards"],
     ];
 
     const checkboxById = {};
