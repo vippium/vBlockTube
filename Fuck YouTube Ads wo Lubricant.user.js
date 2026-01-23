@@ -133,6 +133,807 @@
     "auto",
   ];
 
+  /* ===== DOWNLOAD FUNCTIONALITY - BYPASS YT DOWNLOAD BUTTON ===== */
+  const DOWNARIA_API = "https://fetchtium.up.railway.app/api/v1/extract";
+  const DOWNARIA_API_KEY =
+    "sk-dwa_bd13ca8cac30117344e545f1ef833d4e5e304131945e25bdaa22fb6c64034240"; // Add your API key here: sk-dwa_xxxxx
+  const USE_MOCK_DATA = true; // Set to true to test UI without API
+
+  // Mock data generator for testing UI
+  function get_mock_download_data() {
+    return {
+      items: [
+        {
+          sources: [
+            {
+              type: "video",
+              quality: "1080p (Full HD)",
+              resolution: "1920x1080",
+              size: 125829120, // ~120 MB
+              url: "https://example.com/video_1080p.mp4",
+              filename: "test_video_1080p.mp4",
+            },
+            {
+              type: "video",
+              quality: "720p (HD)",
+              resolution: "1280x720",
+              size: 67108864, // ~64 MB
+              url: "https://example.com/video_720p.mp4",
+              filename: "test_video_720p.mp4",
+            },
+            {
+              type: "video",
+              quality: "480p (SD)",
+              resolution: "854x480",
+              size: 31457280, // ~30 MB
+              url: "https://example.com/video_480p.mp4",
+              filename: "test_video_480p.mp4",
+            },
+            {
+              type: "video",
+              quality: "360p",
+              resolution: "640x360",
+              size: 20971520, // ~20 MB
+              url: "https://example.com/video_360p.mp4",
+              filename: "test_video_360p.mp4",
+            },
+            {
+              type: "audio",
+              quality: "High Quality",
+              bitrate: "192 kbps",
+              format: "MP3",
+              size: 8388608, // ~8 MB
+              url: "https://example.com/audio_192k.mp3",
+              filename: "test_audio_192k.mp3",
+            },
+            {
+              type: "audio",
+              quality: "Medium Quality",
+              bitrate: "128 kbps",
+              format: "MP3",
+              size: 5242880, // ~5 MB
+              url: "https://example.com/audio_128k.mp3",
+              filename: "test_audio_128k.mp3",
+            },
+            {
+              type: "audio",
+              quality: "Low Quality",
+              bitrate: "64 kbps",
+              format: "MP3",
+              size: 2621440, // ~2.5 MB
+              url: "https://example.com/audio_64k.mp3",
+              filename: "test_audio_64k.mp3",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  async function fetch_download_info(url) {
+    // Return mock data for testing if enabled
+    if (USE_MOCK_DATA) {
+      log("[Download] Using mock data for UI testing", 0);
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(get_mock_download_data());
+        }, 800); // Simulate network delay
+      });
+    }
+
+    // Real API call
+    return new Promise((resolve) => {
+      const requestHeaders = {
+        "Content-Type": "application/json",
+      };
+
+      // Add API key if available
+      if (DOWNARIA_API_KEY) {
+        requestHeaders["Authorization"] = `Bearer ${DOWNARIA_API_KEY}`;
+      }
+
+      GM_xmlhttpRequest({
+        method: "POST",
+        url: DOWNARIA_API,
+        headers: requestHeaders,
+        data: JSON.stringify({ url: url }),
+        timeout: 30000,
+        onload: (response) => {
+          try {
+            if (response.status === 200) {
+              const data = JSON.parse(response.responseText);
+              if (data.success) {
+                resolve(data.data);
+              } else {
+                log("Downaria API Error:", data.error || "Unknown error", -1);
+                resolve(null);
+              }
+            } else if (response.status === 401) {
+              log(
+                "Downaria API: Unauthorized (401) - API key may be required or invalid",
+                -1,
+              );
+              resolve(null);
+            } else if (response.status === 429) {
+              log(
+                "Downaria API: Rate limited (429) - Please wait before trying again",
+                -1,
+              );
+              resolve(null);
+            } else {
+              log(`Downaria API Error: ${response.status}`, -1);
+              resolve(null);
+            }
+          } catch (error) {
+            log("Download info parsing error:", error, -1);
+            resolve(null);
+          }
+        },
+        onerror: (error) => {
+          log("Download info request error:", error, -1);
+          resolve(null);
+        },
+        ontimeout: () => {
+          log("Download info request timeout (30s)", -1);
+          resolve(null);
+        },
+      });
+    });
+  }
+
+  // --- Reusable Popup Component ---
+  /**
+   * Create a reusable popup with customizable options
+   *
+   * @param {Object} options - Configuration options
+   * @param {string} options.id - Unique ID for the popup
+   * @param {string} options.title - Popup title
+   * @param {string} [options.width='360px'] - Popup width
+   * @param {string} [options.maxHeight='80vh'] - Maximum height
+   * @param {string} [options.content=''] - Initial content HTML
+   * @param {boolean} [options.draggable=true] - Whether popup is draggable
+   * @param {Function} [options.onClose] - Callback when popup closes
+   * @param {string} [options.className=''] - Additional CSS class
+   * @param {Array} [options.buttons=[]] - Array of button configs: {text, onClick, className}
+   * @returns {Object} {popup, header, body, close}
+   *
+   * @example Basic popup
+   * const { popup, body } = create_popup({
+   *   id: 'my-popup',
+   *   title: 'Settings',
+   *   width: '400px'
+   * });
+   * body.innerHTML = '<p>Your content here</p>';
+   *
+   * @example Popup with buttons
+   * const { popup, body } = create_popup({
+   *   id: 'confirm-dialog',
+   *   title: 'Confirm Action',
+   *   content: '<p>Are you sure?</p>',
+   *   buttons: [
+   *     { text: 'Cancel', onClick: (popup) => popup.remove() },
+   *     { text: 'Confirm', className: 'primary', onClick: () => { doAction(); } }
+   *   ]
+   * });
+   *
+   * @example Non-draggable popup with callback
+   * const { popup, body } = create_popup({
+   *   id: 'info-popup',
+   *   title: 'Information',
+   *   draggable: false,
+   *   onClose: () => console.log('Popup closed')
+   * });
+   *
+   * @example Using shared CSS classes
+   * body.innerHTML = `
+   *   <div class="popup-section-title">Options</div>
+   *   <ul class="popup-list">
+   *     <li class="popup-list-item">Option 1</li>
+   *     <li class="popup-list-item">Option 2</li>
+   *   </ul>
+   *   <div class="popup-error">Error message</div>
+   *   <div class="popup-loading">Loading...</div>
+   * `;
+   */
+  function create_popup(options = {}) {
+    const {
+      id = "custom-popup",
+      title = "Popup",
+      width = "360px",
+      maxHeight = "80vh",
+      content = "",
+      draggable = true,
+      onClose = null,
+      className = "",
+      buttons = [],
+    } = options;
+
+    // Inject shared popup styles once
+    if (!unsafeWindow.document.getElementById("shared-popup-styles")) {
+      const css_str = `
+@keyframes popupEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes popupExit {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.95);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes itemFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popup-container {
+  z-index: 999999999;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  background-color: #ffffff;
+  border: 1px solid #3498db;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  animation: popupEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.popup-container.popup-exiting {
+  animation: popupExit 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.popup-header {
+  cursor: move;
+  user-select: none;
+  padding: 4px 8px;
+  padding-right: 32px;
+  background-color: #3498db;
+  color: #ffffff;
+  border-radius: 4px 4px 0 0;
+  font-weight: bold;
+  font-size: 13px;
+  text-align: left;
+  position: relative;
+}
+
+.popup-header.draggable {
+  cursor: move;
+}
+
+.popup-close {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  background-color: transparent;
+  color: #ffffff;
+  border: none;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.popup-close:hover {
+  background-color: rgba(231, 76, 60, 0.9);
+}
+
+.popup-close:active {
+  background-color: #c0392b;
+}
+
+.popup-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px 10px 10px 10px;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.popup-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.popup-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.popup-body::-webkit-scrollbar-thumb {
+  background: rgba(52, 152, 219, 0.3);
+  border-radius: 4px;
+}
+
+.popup-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 152, 219, 0.5);
+}
+
+.popup-footer {
+  padding: 8px 10px;
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.popup-button {
+  cursor: pointer;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.popup-button:hover {
+  background-color: #2980b9;
+}
+
+.popup-button:active {
+  background-color: #21618c;
+}
+
+.popup-button.primary {
+  background-color: #3498db;
+}
+
+.popup-button.primary:hover {
+  background-color: #2980b9;
+}
+
+.popup-button.primary:active {
+  background-color: #21618c;
+}
+
+.popup-loading {
+  text-align: center;
+  padding: 24px 16px;
+  font-size: 12px;
+  color: #555;
+}
+
+.popup-loading::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  border: 2px solid #e0e0e0;
+  border-top-color: #3498db;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+.popup-error {
+  background: #fef1f1;
+  border: 1px solid #e74c3c;
+  border-radius: 4px;
+  color: #c0392b;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 4px 0;
+}
+
+.popup-error strong {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.popup-error code {
+  display: block;
+  margin-top: 4px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.popup-section-title {
+  user-select: none;
+  font-weight: bold;
+  font-size: 13px;
+  background-color: #f3f6fb;
+  color: #333333;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 4px;
+  width: auto;
+  text-align: start;
+  margin-bottom: 4px;
+  margin-top: 8px;
+}
+
+.popup-section-title:first-child {
+  margin-top: 0;
+}
+
+.popup-list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.popup-list-item {
+  padding: 8px 10px;
+  margin: 0;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.15s, border-color 0.15s;
+  text-align: center;
+  opacity: 0;
+  animation: itemFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.popup-list-item:hover {
+  background: #e8f4f8;
+  border-color: #3498db;
+}
+
+.popup-list-item:active {
+  background: #d6eaf8;
+}
+`;
+      const style = unsafeWindow.document.createElement("style");
+      style.id = "shared-popup-styles";
+      style.textContent = css_str;
+      unsafeWindow.document.head.appendChild(style);
+    }
+
+    // Remove existing popup with same ID
+    const old = unsafeWindow.document.getElementById(id);
+    if (old) old.remove();
+
+    // Create popup elements
+    const popup = unsafeWindow.document.createElement("div");
+    popup.id = id;
+    popup.className = `popup-container ${className}`;
+    popup.style.width = width;
+    popup.style.maxHeight = maxHeight;
+
+    const header = unsafeWindow.document.createElement("div");
+    header.className = `popup-header ${draggable ? "draggable" : ""}`;
+    header.textContent = title;
+
+    const closeBtn = unsafeWindow.document.createElement("button");
+    closeBtn.className = "popup-close";
+    closeBtn.innerHTML = "✕";
+    closeBtn.title = "Close";
+    header.appendChild(closeBtn);
+
+    const body = unsafeWindow.document.createElement("div");
+    body.className = "popup-body";
+    if (content) body.innerHTML = content;
+
+    popup.append(header, body);
+
+    // Add footer with buttons if provided
+    if (buttons.length > 0) {
+      const footer = unsafeWindow.document.createElement("div");
+      footer.className = "popup-footer";
+
+      buttons.forEach((btnConfig) => {
+        const btn = unsafeWindow.document.createElement("button");
+        btn.className = `popup-button ${btnConfig.className || ""}`;
+        btn.textContent = btnConfig.text;
+        btn.addEventListener("click", () => {
+          if (btnConfig.onClick) btnConfig.onClick(popup, body);
+        });
+        footer.appendChild(btn);
+      });
+
+      popup.appendChild(footer);
+    }
+
+    unsafeWindow.document.body.appendChild(popup);
+
+    // Close button handler
+    let isClosing = false;
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (isClosing) return;
+      isClosing = true;
+      popup.remove();
+      if (onClose) onClose();
+    });
+
+    // Make draggable if enabled
+    if (draggable) {
+      make_popup_draggable(popup, header);
+    }
+
+    return { popup, header, body, close: closeBtn };
+  }
+
+  // Download popup using the reusable component
+  function create_download_popup() {
+    const { popup, body, close } = create_popup({
+      id: "download-popup",
+      title: "Download",
+      width: "555px",
+      draggable: true,
+    });
+
+    return { popup, body, closeBtn: close };
+  }
+
+  function display_download_options(body, videoInfo) {
+    // Debug: Log the API response
+    log("[Download] API Response:", videoInfo, 0);
+
+    if (!videoInfo || !videoInfo.items || videoInfo.items.length === 0) {
+      body.innerHTML =
+        '<div class="popup-error"><strong>Error:</strong> No downloadable formats found</div>';
+      log("[Download] No items in response", -1);
+      return;
+    }
+
+    const videoItem = videoInfo.items[0];
+    log("[Download] Video item:", videoItem, 0);
+
+    if (!videoItem.sources || videoItem.sources.length === 0) {
+      body.innerHTML =
+        '<div class="popup-error"><strong>Error:</strong> No video sources available</div>';
+      log("[Download] No sources in video item", -1);
+      return;
+    }
+
+    log("[Download] Sources:", videoItem.sources, 0);
+
+    const videoSources = videoItem.sources.filter((s) => s.type === "video");
+    const audioSources = videoItem.sources.filter((s) => s.type === "audio");
+
+    log(
+      `[Download] Found ${videoSources.length} video and ${audioSources.length} audio sources`,
+      0,
+    );
+
+    body.innerHTML = "";
+
+    if (videoSources.length === 0 && audioSources.length === 0) {
+      body.innerHTML =
+        '<div class="popup-error"><strong>Error:</strong> No compatible formats found in response</div>';
+      return;
+    }
+
+    if (videoSources.length > 0) {
+      const videoTitle = document.createElement("div");
+      videoTitle.className = "popup-section-title";
+      videoTitle.textContent = "VIDEO FORMATS";
+      body.appendChild(videoTitle);
+
+      const videoList = document.createElement("ul");
+      videoList.className = "popup-list";
+
+      videoSources.forEach((source, index) => {
+        const item = document.createElement("li");
+        item.className = "popup-list-item";
+        item.style.animationDelay = `${index * 0.05}s`;
+
+        const quality = document.createElement("div");
+        quality.style.fontWeight = "bold";
+        quality.style.color = "#333";
+        quality.style.marginBottom = "2px";
+        quality.style.fontSize = "12px";
+        quality.style.textAlign = "center";
+        quality.textContent =
+          source.quality || source.resolution || "Unknown Quality";
+
+        const size = document.createElement("div");
+        size.style.fontSize = "11px";
+        size.style.color = "#666";
+        size.style.textAlign = "center";
+        size.textContent = source.size
+          ? `${(source.size / 1024 / 1024).toFixed(2)} MB`
+          : "Size unknown";
+
+        item.appendChild(quality);
+        item.appendChild(size);
+
+        item.addEventListener("click", () => {
+          download_media(
+            source.url,
+            source.filename || `video_${Date.now()}.mp4`,
+          );
+          const popup = document.getElementById("download-popup");
+          if (popup) popup.remove();
+        });
+
+        videoList.appendChild(item);
+      });
+
+      body.appendChild(videoList);
+    }
+
+    if (audioSources.length > 0) {
+      const audioTitle = document.createElement("div");
+      audioTitle.className = "popup-section-title";
+      audioTitle.textContent = "AUDIO FORMATS";
+      body.appendChild(audioTitle);
+
+      const audioList = document.createElement("ul");
+      audioList.className = "popup-list";
+
+      audioSources.forEach((source, index) => {
+        const item = document.createElement("li");
+        item.className = "popup-list-item";
+        // Stagger after video items
+        item.style.animationDelay = `${(videoSources.length + index) * 0.05}s`;
+
+        const quality = document.createElement("div");
+        quality.style.fontWeight = "bold";
+        quality.style.color = "#333";
+        quality.style.marginBottom = "2px";
+        quality.style.fontSize = "12px";
+        quality.style.textAlign = "center";
+        // Display format and bitrate for audio
+        const format = source.format || "Audio";
+        const bitrate = source.bitrate || "";
+        quality.textContent = bitrate ? `${format} - ${bitrate}` : format;
+
+        const size = document.createElement("div");
+        size.style.fontSize = "11px";
+        size.style.color = "#666";
+        size.style.textAlign = "center";
+        size.textContent = source.size
+          ? `${(source.size / 1024 / 1024).toFixed(2)} MB`
+          : "Size unknown";
+
+        item.appendChild(quality);
+        item.appendChild(size);
+
+        item.addEventListener("click", () => {
+          download_media(
+            source.url,
+            source.filename || `audio_${Date.now()}.mp3`,
+          );
+          const popup = document.getElementById("download-popup");
+          if (popup) popup.remove();
+        });
+
+        audioList.appendChild(item);
+      });
+
+      body.appendChild(audioList);
+    }
+  }
+
+  function download_media(url, filename) {
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      log("[Download] Started: " + filename, 0);
+    } catch (error) {
+      log("[Download] Error:", error, -1);
+      display_error_win("Download failed: " + error.message);
+    }
+  }
+
+  async function show_download_menu() {
+    const { popup, body } = create_download_popup();
+    body.innerHTML =
+      '<div class="popup-loading">Fetching video information...</div>';
+
+    const videoUrl = window.location.href;
+    log("[Download] Fetching info for: " + videoUrl, 0);
+
+    const videoInfo = await fetch_download_info(videoUrl);
+
+    if (videoInfo) {
+      log("[Download] Successfully fetched video info", 0);
+      display_download_options(body, videoInfo);
+    } else {
+      log("[Download] Failed to fetch video info", -1);
+      body.innerHTML = `
+        <div class="popup-error">
+          <strong>Failed to fetch video information</strong>
+          <br><br>
+          This may be due to:<br>
+          • Missing or invalid API key<br>
+          • Rate limiting (429)<br>
+          • Network issues<br>
+          • Video not available for download<br><br>
+          To use this feature, get an API key from:<br>
+          <strong>downaria.vercel.app/profile</strong><br><br>
+          Then add it to the script:<br>
+          <code style="font-size: 11px;">DOWNARIA_API_KEY = "sk-dwa_xxx"</code>
+        </div>
+      `;
+    }
+  }
+
+  function init_download_button_bypass() {
+    const hook_youtube_download_button = () => {
+      const downloadButtons = document.querySelectorAll(
+        'button[aria-label="Download"]',
+      );
+
+      downloadButtons.forEach((btn) => {
+        if (btn.dataset.downloadBypassed === "true") return;
+        btn.dataset.downloadBypassed = "true";
+
+        // Intercept click with capture phase to block YouTube's handler
+        btn.addEventListener(
+          "click",
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            show_download_menu();
+            return false;
+          },
+          true,
+        );
+
+        log("[Download Bypass] Hooked YouTube's download button", 0);
+      });
+    };
+
+    // Monitor for download buttons
+    setInterval(hook_youtube_download_button, 1500);
+    const observer = new MutationObserver(() => {
+      setTimeout(hook_youtube_download_button, 300);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    log(
+      "[Download Bypass] Initialized - YouTube download button will show custom menu",
+      0,
+    );
+  }
+
   function init_quality_preset() {
     const setQuality = () => {
       try {
@@ -258,6 +1059,7 @@
       init_disable_saturated_hover();
       init_disable_play_on_hover();
       init_disable_end_cards();
+      init_download_button_bypass();
 
       const hoverToggleListener = (key, _oldValue, newValue) => {
         if (key !== channel_id || !newValue) return;
@@ -2481,6 +3283,7 @@
   display:flex;
   flex-direction:column;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  animation: popupEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 #yt-error-header{
@@ -2508,7 +3311,7 @@
   width:20px;
   height:20px;
   border-radius:3px;
-  font-size:16px;
+  font-size:18px;
   font-weight:bold;
   line-height:1;
   display:flex;
@@ -2549,6 +3352,17 @@
   font-size:12px;
   color:#000;
 }
+
+@keyframes popupEnter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7) translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) translateY(0);
+  }
+}
 `;
     if (!unsafeWindow.document.getElementById("yt-error-style")) {
       const style = unsafeWindow.document.createElement("style");
@@ -2575,7 +3389,7 @@
 
     const closeBtn = unsafeWindow.document.createElement("button");
     closeBtn.id = "yt-error-close";
-    closeBtn.innerHTML = "×";
+    closeBtn.innerHTML = "✕";
     closeBtn.title = "Close";
     header.appendChild(closeBtn);
 
@@ -2616,6 +3430,7 @@
   border-radius:5px;
   box-shadow:0 0 10px rgba(0,0,0,0.3);
   width:260px;
+  animation: popupEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   max-height:80vh;
   display:flex;
   flex-direction:column;
@@ -2649,7 +3464,7 @@
   width:20px;
   height:20px;
   border-radius:3px;
-  font-size:16px;
+  font-size:18px;
   font-weight:bold;
   line-height:1;
   display:flex;
@@ -2719,6 +3534,17 @@
 
 label{
   font-size:13px;
+}
+
+@keyframes popupEnter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7) translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) translateY(0);
+  }
 }
 `;
     const style = unsafeWindow.document.createElement("style");
@@ -3058,7 +3884,7 @@ label{
 
     const closeButton = unsafeWindow.document.createElement("button");
     closeButton.className = "popup-close-button";
-    closeButton.innerHTML = "×";
+    closeButton.innerHTML = "✕";
     closeButton.title = "Close";
     header.appendChild(closeButton);
 
@@ -6122,6 +6948,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
   display:flex;
   flex-direction:column;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  animation: popupEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 #yt-hide-buttons-header{
@@ -6150,7 +6977,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
   width:20px;
   height:20px;
   border-radius:3px;
-  font-size:16px;
+  font-size:18px;
   font-weight:bold;
   line-height:1;
   display:flex;
@@ -6238,6 +7065,17 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
 .yt-hb-section-body.collapsed{
   display:none;
 }
+
+@keyframes popupEnter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7) translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) translateY(0);
+  }
+}
 `;
     const style = unsafeWindow.document.createElement("style");
     style.textContent = css;
@@ -6252,7 +7090,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
 
     const closeBtn = unsafeWindow.document.createElement("button");
     closeBtn.id = "yt-hide-buttons-close";
-    closeBtn.innerHTML = "×";
+    closeBtn.innerHTML = "✕";
     closeBtn.title = "Close";
     header.appendChild(closeBtn);
 
