@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    https://www.github.com/vippium/
-// @version      1.6.3
+// @version      1.7.0
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -178,7 +178,7 @@
   function init_speed_preset() {
     const setSpeed = () => {
       try {
-        if (!user_data.default_speed || user_data.default_speed === "1") return;
+        if (!user_data.default_speed) return;
 
         const video = document.querySelector("video");
         if (!video) return;
@@ -253,6 +253,7 @@
       init_disable_saturated_hover();
       init_disable_play_on_hover();
       init_disable_end_cards();
+      init_interruptions_remover();
 
       const hoverToggleListener = (key, _oldValue, newValue) => {
         if (key !== channel_id || !newValue) return;
@@ -295,15 +296,22 @@
       };
     } catch (error) {
       if (unsafeWindow.trustedTypes) {
-        const policy = unsafeWindow.trustedTypes.createPolicy("eval", {
-          createScript: (script) => script,
+        const policy = unsafeWindow.trustedTypes.createPolicy("eval-policy", {
+          createScript: (script) => {
+            return script;
+          },
         });
         return function (str) {
-          return policy.createScript(str);
+          try {
+            return policy.createScript(str);
+          } catch (e) {
+            return str;
+          }
         };
-      } else {
-        log("trustedTypes not support", error, -1);
       }
+      return function (str) {
+        return str;
+      };
     }
   }
 
@@ -538,178 +546,154 @@
           origin_createElement.toString.bind(origin_createElement);
       },
       request() {
-        async function deal_response(name, response, rule) {
-          if (!rule) return response;
-          let is_deal = false;
-          const responseClone = response.clone();
-          let result = await responseClone.text();
-          let origin_result = result;
-          if (name === "subscribe" || name === "unsubscribe") {
-            let match_list = result.match(/channelId":\"(.*?)"/);
-            const match_channel_id =
-              match_list && match_list.length > 1 ? match_list[1] : "";
-            let channel_infos = user_data.channel_infos;
-            if (match_channel_id) {
-              if (name === "unsubscribe") {
-                let index = channel_infos.ids.indexOf(match_channel_id);
-                if (index > -1) {
-                  channel_infos.ids.splice(index, 1);
-                  channel_infos.names.splice(index, 1);
-                }
-              } else {
-                channel_infos.ids.push(match_channel_id);
-                channel_infos.names.push("");
-              }
-              user_data.channel_infos = channel_infos;
-              user_data_api.set();
-              log(name, match_channel_id, 0);
-            }
-            is_deal = true;
-          }
-          if (name === "playlist") {
-            let obj;
-            try {
-              obj = JSON.parse(result);
-              data_process.obj_process(
-                obj.playerResponse,
-                config_api.common_ytInitialPlayerResponse_rule,
-                false,
-              );
-              data_process.obj_process(
-                obj.response,
-                config_api.get_rules("yt_watch", "init"),
-                false,
-              );
-              result = JSON.stringify(obj);
-            } catch (error) {
-              log("playlist parsing failed", error, -1);
-              result = origin_result;
-            }
-            is_deal = true;
-          }
-          if (!is_deal) {
-            let start_time = Date.now();
-            result = data_process.text_process(result, rule, "insert", false);
-            log(name + " time:", Date.now() - start_time, "spend_time");
-          }
-          if (!result) {
-            result = origin_result;
-            debugger;
-          }
-          return new Response(result, response);
-        }
         const origin_fetch = unsafeWindow.fetch;
-        if (!check_native("fetch", origin_fetch)) {
-          log("fetch have been modified", -1);
+        const Request_clone = unsafeWindow.Request.prototype.clone;
+        const Response_clone = unsafeWindow.Response.prototype.clone;
+
+        function filterShortsAd(entry) {
+          return entry.command?.reelWatchEndpoint?.adClientParams?.isAd != true;
         }
-        fake_fetch = (function () {
-          const fetch_ = async function (uri, options) {
-            async function fetch_request(response) {
-              let url = response.url;
-              inject_info.fetch = true;
-              let request_body;
-              try {
-                request_body = uri.body_ ? JSON.parse(uri.body_) : null;
-              } catch (error) {
-                request_body = null;
-              }
-              if (url.includes("youtubei/v1/next")) {
-                const rule = config_api.get_rules(
-                  mobile_web ? "mobile_yt_watch" : "yt_watch",
-                  request_body?.videoId ? "init" : "next",
-                );
-                return await deal_response("next", response, rule);
-              }
-              if (url.includes("youtubei/v1/player")) {
-                return await deal_response(
-                  "player",
-                  response,
-                  config_api.common_ytInitialPlayerResponse_rule,
-                );
-              }
-              if (url.includes("youtubei/v1/reel/reel_watch_sequence")) {
-                const rule = config_api.get_rules(
-                  mobile_web ? "mobile_yt_shorts" : "yt_shorts",
-                ).ytInitialReelWatchSequenceResponse_rule;
-                return await deal_response(
-                  "reel_watch_sequence",
-                  response,
-                  rule,
-                );
-              }
-              if (url.includes("youtubei/v1/reel/reel_item_watch")) {
-                const rule = config_api.get_rules(
-                  mobile_web ? "mobile_yt_shorts" : "yt_shorts",
-                ).ytInitialData_rule;
-                return await deal_response("reel_item_watch", response, rule);
-              }
-              if (url.includes("youtubei/v1/browse?prettyPrint=false")) {
-                let browse_id = request_body?.browseId;
-                let rule;
-                if (href.includes("https://music.youtube.com/")) {
-                  rule = config_api.get_rules(
-                    "yt_music",
-                    "browse",
-                  ).ytInitialData_rule;
-                }
-                if (
-                  !rule &&
-                  (["yt_home", "mobile_yt_home"].includes(page_type) ||
-                    browse_id === "FEwhat_to_watch")
-                ) {
-                  if (!browse_id) {
-                    let node, node_list, node_index;
-                    if (mobile_web) {
-                      node = $(
-                        "#filter-chip-bar > div > ytm-chip-cloud-chip-renderer.selected",
-                      );
-                      node_list = $$(
-                        "#filter-chip-bar > div > ytm-chip-cloud-chip-renderer",
-                      );
-                      node_index = Array.from(node_list).indexOf(node);
-                      if (node_index !== 1) return response;
-                    } else {
-                      node = $(
-                        "#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer.iron-selected",
-                      );
-                      node_list = $$(
-                        "#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer",
-                      );
-                      node_index = Array.from(node_list).indexOf(node);
-                      if (node_index !== 0) return response;
+
+        function patchPlayerResponse(playerResponse) {
+          delete playerResponse.adPlacements;
+          delete playerResponse.adSlots;
+          delete playerResponse.playerAds;
+        }
+
+        function processPlayerResponse(data, source) {
+          if (data.videoDetails) {
+            patchPlayerResponse(data);
+          } else if (
+            Array.isArray(data) &&
+            data[0]?.playerResponse?.videoDetails
+          ) {
+            patchPlayerResponse(data[0].playerResponse);
+          }
+        }
+
+        function processReelWatchSequenceResponse(data) {
+          if (
+            Array.isArray(data.entries) &&
+            data.entries[0]?.command?.reelWatchEndpoint
+          ) {
+            data.entries = data.entries.filter(filterShortsAd);
+          }
+          if (
+            Array.isArray(data.reelWatchSequenceResponse?.entries) &&
+            data.reelWatchSequenceResponse.entries[0]?.command
+              ?.reelWatchEndpoint
+          ) {
+            data.reelWatchSequenceResponse.entries =
+              data.reelWatchSequenceResponse.entries.filter(filterShortsAd);
+          }
+        }
+
+        function proxyFetch(target, thisArg, argArray) {
+          let request = argArray?.[0];
+          let url = request?.url;
+          if (
+            !(request instanceof unsafeWindow.Request) ||
+            !url ||
+            (!url.includes("/player") &&
+              !url.includes("watch?") &&
+              !url.includes("/reel_watch_sequence") &&
+              !url.includes("/browse")) ||
+            !Request_clone.call(request).url.startsWith("https://")
+          ) {
+            return Reflect.apply(target, thisArg, argArray);
+          }
+
+          return Reflect.apply(target, thisArg, argArray).then((response) => {
+            return Response_clone.call(response)
+              .text()
+              .then((responseText) => {
+                try {
+                  let data = JSON.parse(responseText);
+                  if (url.includes("/player") || url.includes("watch?")) {
+                    processPlayerResponse(data, "fetch");
+                  } else if (url.includes("/reel_watch_sequence")) {
+                    processReelWatchSequenceResponse(data);
+                  } else if (url.includes("/browse")) {
+                    if (data && typeof data === "object") {
+                      try {
+                        let rules = config_api.get_rules(page_type);
+                        if (rules && rules.ytInitialData_rule) {
+                          data_process.obj_process(
+                            data,
+                            rules.ytInitialData_rule,
+                            false,
+                          );
+                        }
+                      } catch (e) {}
                     }
                   }
-                  rule = config_api.get_rules(
-                    mobile_web ? "mobile_yt_home" : "yt_home",
-                    request_body?.browseId ? "init" : "browse",
-                  ).ytInitialData_rule;
-                }
+                  return new Response(JSON.stringify(data), response);
+                } catch (error) {}
+                return response;
+              });
+          });
+        }
 
-                return await deal_response("browse", response, rule);
+        try {
+          Object.defineProperty(unsafeWindow, "ytInitialPlayerResponse", {
+            set(data) {
+              if (data?.videoDetails) {
+                patchPlayerResponse(data);
               }
-              if (url.startsWith("https://www.youtube.com/playlist?list=")) {
-                return await deal_response("playlist", response, []);
-              }
-              if (url.includes("/youtubei/v1/search")) {
-                const rule = config_api.get_rules(
-                  mobile_web ? "mobile_yt_search" : "yt_search",
-                ).ytInitialData_rule;
-                return await deal_response("search", response, rule);
-              }
-              if (url.includes("/unsubscribe?prettyPrint=false")) {
-                return await deal_response("unsubscribe", response, []);
-              }
-              if (url.includes("/subscribe?prettyPrint=false")) {
-                return await deal_response("subscribe", response, []);
-              }
-              return response;
-            }
-            return origin_fetch(uri, options).then(fetch_request);
-          };
-          return fetch_;
-        })();
-        unsafeWindow.fetch = fake_fetch;
-        unsafeWindow.fetch.toString = origin_fetch.toString.bind(origin_fetch);
+              unsafeWindow._ytInitialPlayerResponse = data;
+            },
+            get() {
+              return unsafeWindow._ytInitialPlayerResponse;
+            },
+            configurable: true,
+          });
+        } catch (error) {}
+
+        try {
+          Object.defineProperty(
+            unsafeWindow,
+            "ytInitialReelWatchSequenceResponse",
+            {
+              set(data) {
+                if (data != null) {
+                  processReelWatchSequenceResponse(data);
+                }
+                unsafeWindow._ytInitialReelWatchSequenceResponse = data;
+              },
+              get() {
+                return unsafeWindow._ytInitialReelWatchSequenceResponse;
+              },
+              configurable: true,
+            },
+          );
+        } catch (error) {}
+
+        try {
+          unsafeWindow.fetch = new Proxy(origin_fetch, { apply: proxyFetch });
+        } catch (error) {}
+
+        fake_fetch = origin_fetch;
+        const origin_fetch_impl = async function (uri, options) {
+          const url_str =
+            typeof uri === "string"
+              ? uri
+              : uri?.url_ || uri?.toString?.() || "";
+
+          if (
+            url_str.includes("/youtubei/v1/log_event") ||
+            url_str.includes("/api/stats/qoe") ||
+            url_str.includes("/ptracking") ||
+            url_str.includes("/generate_204") ||
+            url_str.includes("googleads.g.doubleclick.net")
+          ) {
+            return new Response("{}", {
+              status: 204,
+              statusText: "No Content",
+            });
+          }
+
+          return origin_fetch(uri, options);
+        };
         const origin_Request = unsafeWindow.Request;
         if (!check_native("Request", origin_Request)) {
           log("Request have been modified", -1);
@@ -727,6 +711,18 @@
         ) {
           open(method, url, ...opts) {
             inject_info.xhr = true;
+
+            if (
+              url.includes("/youtubei/v1/log_event") ||
+              url.includes("/api/stats/qoe") ||
+              url.includes("/ptracking") ||
+              url.includes("/generate_204") ||
+              url.includes("googleads.g.doubleclick.net")
+            ) {
+              this._blocked = true;
+              return this;
+            }
+
             if (
               ["mobile_yt_watch"].includes(page_type) &&
               url.includes("m.youtube.com/watch?v")
@@ -745,6 +741,9 @@
             return super.open(method, url, ...opts);
           }
           send(body) {
+            if (this._blocked) {
+              return;
+            }
             this.body_ = body;
             super.send(body);
           }
@@ -3318,6 +3317,43 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     styleEl.textContent = css;
   }
 
+  function init_interruptions_remover() {
+    const removeInterruptionsPopup = () => {
+      const toasts =
+        unsafeWindow.document.querySelectorAll("tp-yt-paper-toast");
+      toasts.forEach((toast) => {
+        const textEl = toast.querySelector("#text");
+        if (
+          textEl &&
+          textEl.textContent.includes("Experiencing interruptions?")
+        ) {
+          toast.remove();
+        }
+      });
+    };
+
+    // Check periodically for popups
+    setInterval(removeInterruptionsPopup, 500);
+
+    try {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length) {
+            removeInterruptionsPopup();
+          }
+        });
+      });
+
+      observer.observe(unsafeWindow.document.body, {
+        childList: true,
+        subtree: true,
+        attributes: false,
+        characterData: false,
+      });
+    } catch (e) {
+    }
+  }
+
   function display_update_win() {
     function btn_click() {
       const btn = this;
@@ -4613,6 +4649,8 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
           hide_ask_button: "off",
           hide_download_button: "off",
           hide_end_cards: "off",
+          hide_fullscreen_controls: "off",
+          hide_ai_summary: "off",
           disable_saturated_hover: "off",
           login: false,
         };
@@ -6019,6 +6057,30 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       rules.push("#sponsor-button { display: none !important; }");
     }
 
+    if (user_data.hide_fullscreen_controls === "on") {
+      rules.push(
+        "#movie_player .ytp-overlay-top-right { display: none !important; }",
+      );
+      rules.push(
+        "#movie_player .ytp-fullscreen-quick-actions { display: none !important; }",
+      );
+      rules.push(
+        "player-fullscreen-action-menu .action-menu-engagement-buttons-wrapper { display: none !important; }",
+      );
+    }
+
+    if (user_data.hide_ai_summary === "on") {
+      rules.push(
+        "#expandable-metadata:has(path[d*='gemini' i]) { display: none !important; }",
+      );
+      rules.push(
+        "#video-summary.ytd-structured-description-content-renderer { display: none !important; }",
+      );
+      rules.push(
+        "ytm-expandable-metadata-renderer:has(path[d*='gemini' i]) { display: none !important; }",
+      );
+    }
+
     let css = rules.join("\n");
     let styleEl = unsafeWindow.document.getElementById("yt-hide-buttons-style");
     if (!styleEl) {
@@ -6294,6 +6356,8 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     const otherRows = [
       row("hb_endcards", "End cards (overlay)"),
       row("hb_livechat_replay", "Live chat replay teaser"),
+      row("hb_fullscreen_controls", "Hide fullscreen controls"),
+      row("hb_ai_summary", "Hide AI summaries"),
     ];
 
     const rows = [...actionRows, ...otherRows];
@@ -6367,6 +6431,8 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       ["hb_likebar", "hide_like_bar"],
       ["hb_join", "hide_join_button"],
       ["hb_endcards", "hide_end_cards"],
+      ["hb_fullscreen_controls", "hide_fullscreen_controls"],
+      ["hb_ai_summary", "hide_ai_summary"],
     ];
 
     const checkboxById = {};
@@ -6411,14 +6477,12 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
 
     function applySpeedPreference() {
       try {
-        if (!user_data.default_speed || user_data.default_speed === "1") return;
+        if (!user_data.default_speed) return;
         const video = document.querySelector("video");
         if (!video) return;
         const targetSpeed = parseFloat(user_data.default_speed);
         if (!isFinite(targetSpeed)) return;
-        if (video.playbackRate !== targetSpeed) {
-          video.playbackRate = targetSpeed;
-        }
+        video.playbackRate = targetSpeed;
       } catch (e) {}
     }
 
