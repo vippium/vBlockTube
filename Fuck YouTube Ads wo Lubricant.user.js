@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    https://www.github.com/vippium/
-// @version      1.7.0
+// @version      1.7.1
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -254,6 +254,7 @@
       init_disable_play_on_hover();
       init_disable_end_cards();
       init_interruptions_remover();
+      init_miniplayer_button();
 
       const hoverToggleListener = (key, _oldValue, newValue) => {
         if (key !== channel_id || !newValue) return;
@@ -3028,7 +3029,7 @@ label{
     ].includes(page_type) && (win_config = home_watch_config);
     ["yt_shorts"].includes(page_type) && (win_config = shorts_config);
 
-    // YouTube Music - has its own config, doesn't use common_config
+    // YouTube Music config panel config
     if (["yt_music_home", "yt_music_watch"].includes(page_type)) {
       win_config = music_config;
     } else {
@@ -3350,8 +3351,104 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
         attributes: false,
         characterData: false,
       });
-    } catch (e) {
+    } catch (e) {}
+  }
+
+  async function init_miniplayer_button() {
+    if (
+      document.querySelector(
+        "#cpfyt-miniplayer-button, .ytp-chrome-bottom .ytp-miniplayer-button",
+      )
+    )
+      return;
+
+    let $sizeButton = null;
+    const maxAttempts = 50;
+    let attempts = 0;
+
+    while (!$sizeButton && attempts < maxAttempts) {
+      $sizeButton = document.querySelector(
+        ".ytp-chrome-bottom .ytp-size-button",
+      );
+      if ($sizeButton) break;
+      await new Promise((r) => setTimeout(r, 100));
+      attempts++;
     }
+
+    if (!$sizeButton) return;
+
+    const supportsAnchorPositioning =
+      "anchorName" in document.documentElement.style;
+    const style = $sizeButton.parentElement.classList.contains(
+      "ytp-right-controls-right",
+    )
+      ? "new"
+      : "old";
+
+    const buttonHTML = `<button id="cpfyt-miniplayer-button" class="ytp-button" aria-keyshortcuts="i" ${!supportsAnchorPositioning ? `title="Miniplayer (i)"` : ""}>
+      ${
+        style == "new"
+          ? `
+        <svg fill="none" height="24" viewBox="0 0 24 24" width="24">
+          <path d="M21.20 3.01C21.66 3.05 22.08 3.26 22.41 3.58C22.73 3.91 22.94 4.33 22.98 4.79L23 5V19C23.00 19.49 22.81 19.97 22.48 20.34C22.15 20.70 21.69 20.93 21.20 20.99L21 21H3L2.79 20.99C2.30 20.93 1.84 20.70 1.51 20.34C1.18 19.97 .99 19.49 1 19V13H3V19H21V5H11V3H21L21.20 3.01ZM1.29 3.29C1.10 3.48 1.00 3.73 1.00 4C1.00 4.26 1.10 4.51 1.29 4.70L5.58 9H3C2.73 9 2.48 9.10 2.29 9.29C2.10 9.48 2 9.73 2 10C2 10.26 2.10 10.51 2.29 10.70C2.48 10.89 2.73 11 3 11H9V5C9 4.73 8.89 4.48 8.70 4.29C8.51 4.10 8.26 4 8 4C7.73 4 7.48 4.10 7.29 4.29C7.10 4.48 7 4.73 7 5V7.58L2.70 3.29C2.51 3.10 2.26 3.00 2 3.00C1.73 3.00 1.48 3.10 1.29 3.29ZM19.10 11.00L19 11H12L11.89 11.00C11.66 11.02 11.45 11.13 11.29 11.29C11.13 11.45 11.02 11.66 11.00 11.89L11 12V17C10.99 17.24 11.09 17.48 11.25 17.67C11.42 17.85 11.65 17.96 11.89 17.99L12 18H19L19.10 17.99C19.34 17.96 19.57 17.85 19.74 17.67C19.90 17.48 20.00 17.24 20 17V12L19.99 11.89C19.97 11.66 19.87 11.45 19.70 11.29C19.54 11.13 19.33 11.02 19.10 11.00ZM13 16V13H18V16H13Z" fill="white"></path>
+        </svg>
+      `
+          : `
+        <svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%">
+          <use xlink:href="#cpfyt-id-1" class="ytp-svg-shadow"></use>
+          <path id="cpfyt-id-1" d="M25,17 L17,17 L17,23 L25,23 L25,17 L25,17 Z M29,25 L29,10.98 C29,9.88 28.1,9 27,9 L9,9 C7.9,9 7,9.88 7,10.98 L7,25 C7,26.1 7.9,27 9,27 L27,27 C28.1,27 29,26.1 29,25 L29,25 Z M27,25.02 L9,25.02 L9,10.97 L27,10.97 L27,25.02 L27,25.02 Z" fill="#fff" fill-rule="evenodd"></path>
+        </svg>
+      `
+      }
+    </button>${
+      supportsAnchorPositioning
+        ? `<div class="ytp-tooltip ytp-bottom">
+      <div class="ytp-tooltip-text-wrapper" aria-hidden="true">
+        <div class="ytp-tooltip-bottom-text${style == "old" ? " ytp-tooltip-text-no-title" : ""}">
+          <span class="ytp-tooltip-text">Miniplayer${style == "old" ? " (i)" : ""}</span>
+          ${style == "new" ? '<div class="ytp-tooltip-keyboard-shortcut">I</div>' : ""}
+        </div>
+      </div>
+    </div>`
+        : ""
+    }`;
+
+    $sizeButton.insertAdjacentHTML("beforebegin", buttonHTML);
+
+    const $button = document.querySelector("#cpfyt-miniplayer-button");
+
+    $button.style.display = "inline-block";
+
+    if (supportsAnchorPositioning) {
+      $button.style.anchorName = "--cpfyt-miniplayer-anchor";
+    }
+
+    if (!supportsAnchorPositioning) {
+      const $tooltip = $button.nextElementSibling;
+      if ($tooltip && $tooltip.classList.contains("ytp-tooltip")) {
+        $button.addEventListener("mouseenter", () => {
+          $tooltip.style.display = "block";
+        });
+        $button.addEventListener("mouseleave", () => {
+          $tooltip.style.display = "none";
+        });
+      }
+    }
+
+    $button.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          code: "KeyI",
+          key: "i",
+          keyCode: 73,
+          which: 73,
+        }),
+      );
+    });
   }
 
   function display_update_win() {
@@ -4651,6 +4748,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
           hide_end_cards: "off",
           hide_fullscreen_controls: "off",
           hide_ai_summary: "off",
+          hide_microphone_icon: "off",
           disable_saturated_hover: "off",
           login: false,
         };
@@ -6081,6 +6179,64 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       );
     }
 
+    if (user_data.hide_microphone_icon === "on") {
+      rules.push(
+        'button[aria-label*="Search with your voice" i] { display: none !important; }',
+      );
+      rules.push(
+        'button[aria-label*="Voice search" i] { display: none !important; }',
+      );
+      rules.push(
+        '.ytd-topbar-logo-button-renderer button[aria-label*="mic" i] { display: none !important; }',
+      );
+      rules.push(
+        "ytm-topbar-search-input-renderer .search-microphone { display: none !important; }",
+      );
+    }
+
+    if (user_data.hide_microphone_icon === "on") {
+      rules.push(
+        'button[aria-label*="Search with your voice" i] { display: none !important; }',
+      );
+      rules.push(
+        'button[aria-label*="Voice search" i] { display: none !important; }',
+      );
+      rules.push(
+        '.ytd-topbar-logo-button-renderer button[aria-label*="mic" i] { display: none !important; }',
+      );
+      rules.push(
+        "ytm-topbar-search-input-renderer .search-microphone { display: none !important; }",
+      );
+    }
+
+    rules.push(`
+      #cpfyt-miniplayer-button {
+        display: inline-block !important;
+        anchor-name: --cpfyt-miniplayer-anchor;
+      }
+      #cpfyt-miniplayer-button + .ytp-tooltip {
+        display: block !important;
+        position: fixed !important;
+        position-anchor: --cpfyt-miniplayer-anchor;
+        bottom: anchor(top);
+        left: anchor(center);
+        translate: -50% -14px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      .ytp-delhi-modern #cpfyt-miniplayer-button + .ytp-tooltip {
+        translate: -50% -22px;
+      }
+      #cpfyt-miniplayer-button:hover + .ytp-tooltip {
+        opacity: 1;
+      }
+      #cpfyt-miniplayer-button + .ytp-tooltip .ytp-tooltip-text {
+        font-size: 13px;
+        white-space: pre;
+      }
+    `);
+
     let css = rules.join("\n");
     let styleEl = unsafeWindow.document.getElementById("yt-hide-buttons-style");
     if (!styleEl) {
@@ -6358,6 +6514,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       row("hb_livechat_replay", "Live chat replay teaser"),
       row("hb_fullscreen_controls", "Hide fullscreen controls"),
       row("hb_ai_summary", "Hide AI summaries"),
+      row("hb_microphone", "Hide microphone icon"),
     ];
 
     const rows = [...actionRows, ...otherRows];
@@ -6433,6 +6590,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       ["hb_endcards", "hide_end_cards"],
       ["hb_fullscreen_controls", "hide_fullscreen_controls"],
       ["hb_ai_summary", "hide_ai_summary"],
+      ["hb_microphone", "hide_microphone_icon"],
     ];
 
     const checkboxById = {};
