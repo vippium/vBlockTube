@@ -1529,7 +1529,14 @@
           reverse: false,
         };
         if (page_type_ === "yt_search") {
-          tmp_ytInitialData_rule = common_ytInitialData_rule;
+          tmp_ytInitialData_rule = [
+            ...common_ytInitialData_rule,
+            "abs:contents[*][*].videoRenderer=- /.isAd",
+            "abs:contents[*][*].gridVideoRenderer=- /.isAd",
+            "abs:contents[*][*].videoWithContextRenderer=- /.isAd",
+            "abs:results[*].videoRenderer=- /.isAd",
+            "abs:results[*].gridVideoRenderer=- /.isAd",
+          ];
           return_obj.ytInitialData_rule = tmp_ytInitialData_rule;
           return return_obj;
         }
@@ -1542,7 +1549,14 @@
         }
 
         if (page_type_ === "mobile_yt_search") {
-          tmp_ytInitialData_rule = common_ytInitialData_rule;
+          tmp_ytInitialData_rule = [
+            ...common_ytInitialData_rule,
+            "abs:contents[*][*].videoRenderer=- /.isAd",
+            "abs:contents[*][*].gridVideoRenderer=- /.isAd",
+            "abs:contents[*][*].videoWithContextRenderer=- /.isAd",
+            "abs:results[*].videoRenderer=- /.isAd",
+            "abs:results[*].gridVideoRenderer=- /.isAd",
+          ];
           return_obj.ytInitialData_rule = tmp_ytInitialData_rule;
           return return_obj;
         }
