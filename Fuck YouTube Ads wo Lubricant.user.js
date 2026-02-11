@@ -230,6 +230,114 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
+  function init_restore_red_progress_bar() {
+    if (user_data.restore_red_progress_bar !== "on") return;
+
+    const style = unsafeWindow.document.createElement("style");
+    style.textContent = `
+      /* Restore red progress bar */
+      .ytp-play-progress,
+      #progress.ytd-thumbnail-overlay-resume-playback-renderer,
+      .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment,
+      .ytChapteredProgressBarChapteredPlayerBarChapterSeen,
+      .ytChapteredProgressBarChapteredPlayerBarFill,
+      .ytProgressBarLineProgressBarPlayed,
+      #progress.yt-page-navigation-progress,
+      .progress-bar-played.ytd-progress-bar-line,
+      .thumbnail-overlay-resume-playback-progress {
+        background: #f03 !important;
+      }
+    `;
+    unsafeWindow.document.head.appendChild(style);
+  }
+
+  function init_search_thumbnail_small() {
+    if (user_data.search_thumbnail_small !== "on") return;
+
+    const style = unsafeWindow.document.createElement("style");
+    style.textContent = `
+      /* Reduce search result thumbnail size to small (360px) */
+      ytd-search ytd-video-renderer ytd-thumbnail.ytd-video-renderer,
+      ytd-search yt-lockup-view-model .yt-lockup-view-model__content-image,
+      ytd-search ytd-channel-renderer #avatar-section {
+        max-width: 360px !important;
+      }
+    `;
+    unsafeWindow.document.head.appendChild(style);
+  }
+
+  function init_restore_related_sidebar_layout() {
+    if (user_data.restore_related_sidebar_layout !== "on") return;
+    if (!["yt_watch"].includes(page_type)) return;
+
+    const style = unsafeWindow.document.createElement("style");
+    style.textContent = `
+      /* Restore related videos sidebar layout */
+      ytd-watch-flexy #secondary {
+        max-width: 402px;
+      }
+
+      #secondary #related {
+        /* Apply horizontal styles to vertical layout items */
+        .yt-lockup-view-model--vertical {
+          display: flex;
+          flex-direction: row;
+          height: inherit;
+        }
+
+        .yt-lockup-view-model--vertical .yt-lockup-view-model__content-image {
+          display: flex;
+          flex: none;
+          padding-right: 16px;
+          justify-content: center;
+          width: 168px;
+          padding-bottom: 0;
+        }
+
+        .yt-lockup-view-model__content-image {
+          max-width: 168px;
+        }
+
+        .yt-lockup-view-model--vertical .yt-lockup-view-model__metadata {
+          flex: 1;
+        }
+
+        .yt-lockup-view-model--vertical.yt-lockup-view-model--collection-stack-1 {
+          position: relative;
+          margin-top: 6px;
+        }
+
+        .yt-lockup-view-model--vertical.yt-lockup-view-model--collection-stack-2 {
+          position: relative;
+          margin-top: 10px;
+        }
+
+        .yt-lockup-view-model--vertical.yt-lockup-view-model--compact .yt-lockup-view-model__content-image {
+          padding-right: 8px;
+        }
+
+        .yt-lockup-metadata-view-model--vertical .yt-lockup-metadata-view-model__avatar {
+          display: none;
+        }
+
+        /* Force 1 column grid layout for 2-column grid */
+        ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns]:not(:has(ytd-item-section-renderer)) #items.ytd-watch-next-secondary-results-renderer,
+        ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] #contents.ytd-item-section-renderer {
+          grid-template-columns: 1fr;
+        }
+
+        ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] .lockup.ytd-watch-next-secondary-results-renderer {
+          margin-bottom: 0;
+        }
+      }
+    `;
+    unsafeWindow.document.head.appendChild(style);
+  }
+
+  function restore_sidebar_layout_on_ytInitialData(data) {
+    return data;
+  }
+
   init();
   function init() {
     log("Initialization started!" + href, 0);
@@ -249,6 +357,9 @@
       init_quality_preset();
       init_speed_preset();
       init_remove_remix_duet();
+      init_restore_red_progress_bar();
+      init_search_thumbnail_small();
+      init_restore_related_sidebar_layout();
       init_disable_ambient_mode();
       init_disable_saturated_hover();
       init_disable_play_on_hover();
@@ -408,6 +519,7 @@
               "mobile_yt_watch_searching",
             ].includes(page_type) && (rules = rules.ytInitialData_rule);
             value = process_property("ytInitialData", value, rules);
+            value = restore_sidebar_layout_on_ytInitialData(value);
             ytInitialData_value = value;
           },
           configurable: false,
@@ -2823,6 +2935,20 @@ label{
             },
           ],
         },
+        {
+          id: "restore_related_sidebar_layout",
+          title: "Restore Related Sidebar Layout",
+          items: [
+            {
+              tag: "btn_lable_open",
+              value: "on",
+            },
+            {
+              tag: "btn_lable_close",
+              value: "off",
+            },
+          ],
+        },
       ],
     };
     const shorts_config = {
@@ -4737,6 +4863,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
           default_quality: "hd1080",
           default_speed: "1",
           hide_remix_duet: "on",
+          restore_related_sidebar_layout: "on",
           language: "en",
           channel_infos: {
             ids: [],
@@ -4764,6 +4891,8 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
           hide_ai_summary: "off",
           hide_microphone_icon: "off",
           disable_saturated_hover: "off",
+          restore_red_progress_bar: "on",
+          search_thumbnail_small: "on",
           login: false,
         };
         let diff = false;
@@ -4835,7 +4964,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
         last_version !== GM_info.script.version &&
           GM_setValue("last_version", GM_info.script.version);
 
-        // backfill watch_page_config
         if (!tmp_user_data.watch_page_config) {
           tmp_user_data.watch_page_config = {
             shop_banner: "off",
@@ -6529,6 +6657,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       row("hb_fullscreen_controls", "Hide fullscreen controls"),
       row("hb_ai_summary", "Hide AI summaries"),
       row("hb_microphone", "Hide microphone icon"),
+      row("hb_restore_red_progress_bar", "Restore red progress bar"),
     ];
 
     const rows = [...actionRows, ...otherRows];
@@ -6605,6 +6734,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       ["hb_fullscreen_controls", "hide_fullscreen_controls"],
       ["hb_ai_summary", "hide_ai_summary"],
       ["hb_microphone", "hide_microphone_icon"],
+      ["hb_restore_red_progress_bar", "restore_red_progress_bar"],
     ];
 
     const checkboxById = {};
