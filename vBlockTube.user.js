@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Fuck YouTube Ads w/o Lubricant (aka vBlockTube)
+// @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
 // @version      1.8.0
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
