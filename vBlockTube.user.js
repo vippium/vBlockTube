@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Fuck YouTube Ads w/o Lubricant
+// @name         Fuck YouTube Ads w/o Lubricant (aka vBlockTube)
 // @namespace    https://www.github.com/vippium/
 // @version      1.7.2
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
@@ -24,8 +24,8 @@
 // @run-at       document-start
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @homepageURL  https://github.com/vippium/vBlockTube
-// @downloadURL  https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/Fuck YouTube Ads wo Lubricant.user.js
-// @updateURL    https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/Fuck YouTube Ads wo Lubricant.user.js
+// @downloadURL  https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/vBlockTube.user.js
+// @updateURL    https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/vBlockTube.user.js
 // @license      MIT
 // ==/UserScript==
 
@@ -236,7 +236,6 @@
 
     const style = unsafeWindow.document.createElement("style");
     style.textContent = `
-      /* Restore red progress bar */
       .ytp-play-progress,
       #progress.ytd-thumbnail-overlay-resume-playback-renderer,
       .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment,
@@ -257,7 +256,6 @@
 
     const style = unsafeWindow.document.createElement("style");
     style.textContent = `
-      /* Reduce search result thumbnail size to small (360px) */
       ytd-search ytd-video-renderer ytd-thumbnail.ytd-video-renderer,
       ytd-search yt-lockup-view-model .yt-lockup-view-model__content-image,
       ytd-search ytd-channel-renderer #avatar-section {
@@ -273,13 +271,11 @@
 
     const style = unsafeWindow.document.createElement("style");
     style.textContent = `
-      /* Restore related videos sidebar layout */
       ytd-watch-flexy #secondary {
         max-width: 402px;
       }
 
       #secondary #related {
-        /* Apply horizontal styles to vertical layout items */
         .yt-lockup-view-model--vertical {
           display: flex;
           flex-direction: row;
@@ -321,7 +317,6 @@
           display: none;
         }
 
-        /* Force 1 column grid layout for 2-column grid */
         ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns]:not(:has(ytd-item-section-renderer)) #items.ytd-watch-next-secondary-results-renderer,
         ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] #contents.ytd-item-section-renderer {
           grid-template-columns: 1fr;
@@ -5887,6 +5882,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
   const sb_segmentCache = new Map();
   let sb_currentVideoId = null;
   let sb_currentVideoEl = null;
+  let sb_eventListenersAttached = false;
 
   function sb_log(...args) {
     if (!open_debugger) return;
@@ -5924,6 +5920,17 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     exclusive: "#008a5c",
     filler: "#7300FF",
   };
+
+  function sb_clearProgressBarMarkers() {
+    const progressBar =
+      unsafeWindow.document.querySelector(".ytp-progress-bar");
+    if (!progressBar) return;
+
+    const existing = progressBar.querySelectorAll(".sb-marker");
+    existing.forEach((el) => el.remove());
+
+    sb_log("Cleared SponsorBlock markers");
+  }
 
   function sb_renderProgressBarMarkers(segments, videoDuration) {
     if (!segments || segments.length === 0) return;
@@ -6055,11 +6062,22 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     const video = sb_getVideoElement();
     if (!video || !videoId) return;
 
-    if (video === sb_currentVideoEl && videoId === sb_currentVideoId) return;
+    // If same video and listeners already attached, skip
+    if (
+      video === sb_currentVideoEl &&
+      videoId === sb_currentVideoId &&
+      sb_eventListenersAttached
+    ) {
+      sb_log("Skipper already attached to", videoId);
+      return;
+    }
 
     sb_log("Attaching skipper to video", videoId);
     sb_currentVideoEl = video;
     sb_currentVideoId = videoId;
+    sb_eventListenersAttached = false;
+
+    sb_clearProgressBarMarkers();
 
     sb_fetchSegments(videoId, (segments) => {
       if (!segments.length) {
@@ -6116,6 +6134,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
 
       video.addEventListener("timeupdate", skipIfNeeded);
       video.addEventListener("seeking", onSeeking);
+      sb_eventListenersAttached = true;
 
       const watcher = unsafeWindow.setInterval(() => {
         if (
@@ -6127,6 +6146,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
           unsafeWindow.clearInterval(watcher);
           sb_currentVideoEl = null;
           sb_currentVideoId = null;
+          sb_eventListenersAttached = false;
           sb_log("Detached skipper from old video element");
         }
       }, 1500);
