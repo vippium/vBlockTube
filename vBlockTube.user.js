@@ -2,7 +2,7 @@
 // @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
 // @version      1.8.0
-// @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
+// @description  Blocks YouTube ads and provides enhanced features for a better viewing experience.
 // @author       vippium
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
