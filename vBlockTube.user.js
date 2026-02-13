@@ -86,7 +86,7 @@
 
   const origin_console = console;
   const script_url =
-    "https://update.greasyfork.org/scripts/557720/Fuck%20YouTube%20Ads%20wo%20Lubricant.user.js";
+    "https://update.greasyfork.org/scripts/557720/vBlockTube.user.js";
   let href = location.href;
   let ytInitialPlayerResponse_rule;
   let ytInitialData_rule;
