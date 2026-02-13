@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fuck YouTube Ads w/o Lubricant
 // @namespace    https://www.github.com/vippium/
-// @version      1.7.1
+// @version      1.7.2
 // @description  Very Useful for Ad-free experience (M*therF@ckers are not allowed to use this)
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -53,6 +53,7 @@
   const open_config_keyword = "2333";
   const display_error_keyword = "2444";
   const reset_config_keyword = "2555";
+  const custom_panel_keyword = "2666";
 
   let channel_id = GM_getValue("last_channel_id", "default");
 
@@ -1870,10 +1871,6 @@
               `${video_sub_path.replace(/\.[^\.]+$/, ".adSlotRenderer$exist")}`,
             );
 
-            !mobile_web &&
-              type === "init" &&
-              player_bottom_rules.push(`/.merchandiseShelfRenderer$exist`);
-
             if (
               user_data.open_recommend_movie === "off" &&
               cur_watch_channle_id !== "UClgRkhTL3_hImCAmdLfDE4g"
@@ -2102,7 +2099,7 @@
               display_error_keyword,
               open_config_keyword,
               reset_config_keyword,
-              "2666",
+              custom_panel_keyword,
             ].includes(this.value)
           ) {
             setTimeout(() => {
@@ -2169,7 +2166,7 @@
                 }
                 display_error_win(tips);
               }
-              if (search_input_node.value === "2666") {
+              if (search_input_node.value === custom_panel_keyword) {
                 search_input_node.value = "";
                 display_hide_buttons_win();
               }
@@ -5917,6 +5914,81 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     return unsafeWindow.document.querySelector("video");
   }
 
+  const SB_CATEGORY_COLORS = {
+    sponsor: "#00d400",
+    intro: "#00ffff",
+    outro: "#0202ed",
+    interaction: "#cc00ff",
+    music_offtopic: "#ff9900",
+    selfpromo: "#ffff00",
+    exclusive: "#008a5c",
+    filler: "#7300FF",
+  };
+
+  function sb_renderProgressBarMarkers(segments, videoDuration) {
+    if (!segments || segments.length === 0) return;
+    if (!videoDuration || videoDuration === 0) return;
+
+    const progressBar =
+      unsafeWindow.document.querySelector(".ytp-progress-bar");
+    if (!progressBar) return;
+
+    // Remove existing SB markers
+    const existing = progressBar.querySelectorAll(".sb-marker");
+    existing.forEach((el) => el.remove());
+
+    // Create container for markers if not exists
+    let markerContainer = progressBar.querySelector(".sb-markers-container");
+    if (!markerContainer) {
+      markerContainer = unsafeWindow.document.createElement("div");
+      markerContainer.className = "sb-markers-container";
+      markerContainer.style.position = "relative";
+      markerContainer.style.width = "100%";
+      markerContainer.style.height = "100%";
+      markerContainer.style.pointerEvents = "none";
+      progressBar.style.position = "relative";
+      progressBar.appendChild(markerContainer);
+    }
+
+    // Add CSS for markers if not already added
+    if (!unsafeWindow.document.querySelector("#sb-marker-styles")) {
+      const style = unsafeWindow.document.createElement("style");
+      style.id = "sb-marker-styles";
+      style.textContent = `
+        .sb-marker {
+          position: absolute;
+          height: 100%;
+          opacity: 0.8;
+          pointer-events: auto;
+          transition: opacity 0.2s;
+        }
+        .sb-marker:hover {
+          opacity: 1;
+        }
+      `;
+      unsafeWindow.document.head.appendChild(style);
+    }
+
+    // Render each segment as a colored marker
+    for (const segment of segments) {
+      const color = SB_CATEGORY_COLORS[segment.category] || "#cccccc";
+      const startPercent = (segment.start / videoDuration) * 100;
+      const endPercent = (segment.end / videoDuration) * 100;
+      const widthPercent = endPercent - startPercent;
+
+      const marker = unsafeWindow.document.createElement("div");
+      marker.className = "sb-marker";
+      marker.style.left = startPercent + "%";
+      marker.style.width = widthPercent + "%";
+      marker.style.backgroundColor = color;
+      marker.title = `${segment.category} (${segment.start.toFixed(0)}s - ${segment.end.toFixed(0)}s)`;
+
+      markerContainer.appendChild(marker);
+    }
+
+    sb_log("Rendered", segments.length, "SB progress bar markers");
+  }
+
   function sb_fetchSegments(videoId, callback) {
     if (!videoId) {
       callback([]);
@@ -5996,6 +6068,19 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       }
 
       let nextIndex = 0;
+
+      // Render progress bar markers
+      if (video.duration && !isNaN(video.duration)) {
+        sb_renderProgressBarMarkers(segments, video.duration);
+      } else {
+        const durationWatcher = () => {
+          if (video.duration && !isNaN(video.duration)) {
+            sb_renderProgressBarMarkers(segments, video.duration);
+            video.removeEventListener("durationchange", durationWatcher);
+          }
+        };
+        video.addEventListener("durationchange", durationWatcher);
+      }
 
       const skipIfNeeded = () => {
         const t = video.currentTime;
