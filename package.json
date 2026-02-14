@@ -1,13 +1,9 @@
 {
   "name": "vblocktube",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "version": "1.7.5",
+  "description": "A userscript to block YouTube ads with enhanced features.",
   "keywords": [],
-  "author": "",
+  "author": "vippium",
   "license": "ISC",
   "type": "commonjs"
 }
