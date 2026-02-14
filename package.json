@@ -1,8 +1,7 @@
 {
   "name": "vblocktube",
-  "version": "1.8.0",
+  "version": "1.7.5",
   "description": "A userscript to block YouTube ads with enhanced features.",
-  "main": "index.js",
   "keywords": [],
   "author": "vippium",
   "license": "ISC",

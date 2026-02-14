@@ -6376,7 +6376,9 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     }
 
     if (user_data.hide_more_actions_button === "on") {
-      rules.push("#actions #menu ytd-menu-renderer yt-button-shape#button-shape { display: none !important; }");
+      rules.push(
+        "#actions #menu ytd-menu-renderer yt-button-shape#button-shape { display: none !important; }",
+      );
       rules.push(
         '#actions #menu ytd-menu-renderer button[aria-label="More actions"] { display: none !important; }',
       );
