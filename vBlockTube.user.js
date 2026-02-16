@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
-// @version      1.7.5
+// @version      1.7.6
 // @description  Blocks YouTube ads and provides enhanced features for a better viewing experience.
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -1033,6 +1033,7 @@
     element_monitor();
 
     init_sponsorblock();
+    init_duplicate_song_prevention();
 
     apply_hide_buttons_css();
 
@@ -1327,6 +1328,9 @@
           btn_sponsorblock_title: "SponsorBlock 跳过赞助片段",
           btn_sponsorblock_tips:
             "使用 SponsorBlock 接口自动跳过视频中的赞助内容",
+          btn_duplicate_song_prevention_title: "防止重复歌曲",
+          btn_duplicate_song_prevention_tips:
+            "防止同一首歌曲或同一艺术家的歌曲连续播放",
         },
         "zh-TW": {
           sponsored: "贊助商廣告",
@@ -1379,6 +1383,9 @@
           btn_sponsorblock_title: "SponsorBlock 跳過贊助片段",
           btn_sponsorblock_tips:
             "使用 SponsorBlock API 自動跳過影片中的贊助內容",
+          btn_duplicate_song_prevention_title: "防止重複歌曲",
+          btn_duplicate_song_prevention_tips:
+            "防止同一首歌曲或同一藝術家的歌曲連續播放",
         },
         "zh-HK": {
           sponsored: "贊助廣告",
@@ -1432,6 +1439,9 @@
           btn_sponsorblock_title: "SponsorBlock 跳過贊助內容",
           btn_sponsorblock_tips:
             "使用 SponsorBlock API 自動略過影片中的贊助片段",
+          btn_duplicate_song_prevention_title: "防止重複歌曲",
+          btn_duplicate_song_prevention_tips:
+            "防止同一首歌曲或同一藝術家的歌曲連續播放",
         },
         en: {
           sponsored: "Sponsored Ads",
@@ -1488,6 +1498,9 @@
           btn_sponsorblock_title: "SponsorBlock skip sponsors",
           btn_sponsorblock_tips:
             "Automatically skip sponsor segments using SponsorBlock API",
+          btn_duplicate_song_prevention_title: "Prevent Duplicate Songs",
+          btn_duplicate_song_prevention_tips:
+            "Prevent the same song or artist from playing consecutively",
         },
       },
 
@@ -2100,16 +2113,42 @@
             setTimeout(() => {
               search_input_node.blur();
 
+              // Auto-CLose Search Panel Function
+              const closeSearchPanel = () => {
+                const escapeEvent = new KeyboardEvent("keydown", {
+                  key: "Escape",
+                  code: "Escape",
+                  keyCode: 27,
+                  which: 27,
+                  bubbles: true,
+                  cancelable: true,
+                });
+                search_input_node.dispatchEvent(escapeEvent);
+              };
+
               if (search_input_node.value === open_config_keyword) {
                 search_input_node.value = "";
+                search_input_node.dispatchEvent(
+                  new Event("input", { bubbles: true }),
+                );
+                closeSearchPanel();
                 display_config_win();
               }
               if (search_input_node.value === reset_config_keyword) {
+                search_input_node.value = "";
+                search_input_node.dispatchEvent(
+                  new Event("input", { bubbles: true }),
+                );
+                closeSearchPanel();
                 user_data_api.reset();
                 return;
               }
               if (search_input_node.value === display_error_keyword) {
                 search_input_node.value = "";
+                search_input_node.dispatchEvent(
+                  new Event("input", { bubbles: true }),
+                );
+                closeSearchPanel();
                 let tips = `script ${flag_info.init} ${
                   isinint ? flag_info.success : flag_info.failed
                 }`;
@@ -2163,6 +2202,10 @@
               }
               if (search_input_node.value === custom_panel_keyword) {
                 search_input_node.value = "";
+                search_input_node.dispatchEvent(
+                  new Event("input", { bubbles: true }),
+                );
+                closeSearchPanel();
                 display_hide_buttons_win();
               }
             }, 500);
@@ -3128,6 +3171,21 @@ label{
           id: "sponsorblock",
           title: "btn_sponsorblock_title",
           tips: "btn_sponsorblock_tips",
+          items: [
+            {
+              tag: "btn_lable_open",
+              value: "on",
+            },
+            {
+              tag: "btn_lable_close",
+              value: "off",
+            },
+          ],
+        },
+        {
+          id: "duplicate_song_prevention",
+          title: "btn_duplicate_song_prevention_title",
+          tips: "btn_duplicate_song_prevention_tips",
           items: [
             {
               tag: "btn_lable_open",
@@ -4851,6 +4909,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
           shorts_dbclick_like: "off",
           shorts_disable_loop_play: "on",
           sponsorblock: "on",
+          duplicate_song_prevention: "off",
           disable_play_on_hover: "off",
           default_quality: "hd1080",
           default_speed: "1",
@@ -5940,11 +5999,9 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       unsafeWindow.document.querySelector(".ytp-progress-bar");
     if (!progressBar) return;
 
-    // Remove existing SB markers
     const existing = progressBar.querySelectorAll(".sb-marker");
     existing.forEach((el) => el.remove());
 
-    // Create container for markers if not exists
     let markerContainer = progressBar.querySelector(".sb-markers-container");
     if (!markerContainer) {
       markerContainer = unsafeWindow.document.createElement("div");
@@ -5957,7 +6014,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       progressBar.appendChild(markerContainer);
     }
 
-    // Add CSS for markers if not already added
     if (!unsafeWindow.document.querySelector("#sb-marker-styles")) {
       const style = unsafeWindow.document.createElement("style");
       style.id = "sb-marker-styles";
@@ -5976,7 +6032,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       unsafeWindow.document.head.appendChild(style);
     }
 
-    // Render each segment as a colored marker
     for (const segment of segments) {
       const color = SB_CATEGORY_COLORS[segment.category] || "#cccccc";
       const startPercent = (segment.start / videoDuration) * 100;
@@ -6062,7 +6117,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     const video = sb_getVideoElement();
     if (!video || !videoId) return;
 
-    // If same video and listeners already attached, skip
     if (
       video === sb_currentVideoEl &&
       videoId === sb_currentVideoId &&
@@ -6087,7 +6141,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
 
       let nextIndex = 0;
 
-      // Render progress bar markers
       if (video.duration && !isNaN(video.duration)) {
         sb_renderProgressBarMarkers(segments, video.duration);
       } else {
@@ -6200,6 +6253,106 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     }, 3000);
 
     sb_log("SponsorBlock navigation listeners attached");
+  }
+
+  function init_duplicate_song_prevention() {
+    if (user_data.duplicate_song_prevention !== "on") {
+      return;
+    }
+    if (!["yt_music_home", "yt_music_watch"].includes(page_type)) {
+      return;
+    }
+
+    let lastPlayedSong = null;
+    let lastPlayedArtist = null;
+    const playHistory = [];
+    const maxHistoryLength = 50;
+
+    function getSongInfo() {
+      const titleElement = document.querySelector(
+        "yt-formatted-string.style-scope.ytmusic-player-bar",
+      );
+      const artistElement = document.querySelector(
+        "span.subtitle.style-scope.ytmusic-player-bar a",
+      );
+
+      const title = titleElement?.textContent?.trim() || null;
+      const artist = artistElement?.textContent?.trim() || null;
+
+      return { title, artist };
+    }
+
+    function shouldSkipSong(title, artist) {
+      if (!title) return false;
+
+      if (title === lastPlayedSong) {
+        sb_log(`Duplicate song detected: ${title}`, 0);
+        return true;
+      }
+
+      if (artist && artist === lastPlayedArtist) {
+        const recentArtists = playHistory.slice(-3).map((s) => s.artist);
+        if (recentArtists.filter((a) => a === artist).length >= 2) {
+          sb_log(`Duplicate artist detected: ${artist}`, 0);
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function updateHistory(title, artist) {
+      playHistory.push({ title, artist, timestamp: Date.now() });
+      if (playHistory.length > maxHistoryLength) {
+        playHistory.shift();
+      }
+      lastPlayedSong = title;
+      lastPlayedArtist = artist;
+    }
+
+    function handleSongChange() {
+      setTimeout(() => {
+        const { title, artist } = getSongInfo();
+
+        if (!title) return;
+
+        if (shouldSkipSong(title, artist)) {
+          const nextBtn =
+            document.querySelector("button[aria-label='Next']") ||
+            document.querySelector("button.yt-spec-button-shape-next");
+
+          if (nextBtn) {
+            nextBtn.click();
+            sb_log(`Skipped duplicate: ${title}`, 0);
+          }
+        } else {
+          updateHistory(title, artist);
+        }
+      }, 500);
+    }
+
+    unsafeWindow.document.addEventListener(
+      "yt-navigate-finish",
+      handleSongChange,
+    );
+    unsafeWindow.document.addEventListener(
+      "yt-page-data-updated",
+      handleSongChange,
+    );
+
+    const observer = new MutationObserver(() => {
+      handleSongChange();
+    });
+
+    const playerElement = document.querySelector("ytmusic-player-bar");
+    if (playerElement) {
+      observer.observe(playerElement, {
+        subtree: true,
+        characterData: true,
+      });
+    }
+
+    sb_log("Duplicate song prevention initialized", 0);
   }
 
   /* ====== HIDE CREATE BUTTON ====== */
