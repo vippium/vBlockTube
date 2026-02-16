@@ -913,6 +913,11 @@
   }
 
   function on_page_change() {
+    // Cleanup duplicate song prevention when leaving YT Music
+    if (!["yt_music_home", "yt_music_watch"].includes(page_type)) {
+      cleanup_duplicate_song_prevention();
+    }
+
     function common() {
       if (page_type === "yt_shorts") {
         shorts_fun.check_shorts_exist();
@@ -1330,7 +1335,7 @@
             "使用 SponsorBlock 接口自动跳过视频中的赞助内容",
           btn_duplicate_song_prevention_title: "防止重复歌曲",
           btn_duplicate_song_prevention_tips:
-            "防止同一首歌曲或同一艺术家的歌曲连续播放",
+            "防止同一首歌曲或同一艺术家连续播放",
         },
         "zh-TW": {
           sponsored: "贊助商廣告",
@@ -1385,7 +1390,7 @@
             "使用 SponsorBlock API 自動跳過影片中的贊助內容",
           btn_duplicate_song_prevention_title: "防止重複歌曲",
           btn_duplicate_song_prevention_tips:
-            "防止同一首歌曲或同一藝術家的歌曲連續播放",
+            "防止同一首歌曲或同一藝術家連續播放",
         },
         "zh-HK": {
           sponsored: "贊助廣告",
@@ -1441,7 +1446,7 @@
             "使用 SponsorBlock API 自動略過影片中的贊助片段",
           btn_duplicate_song_prevention_title: "防止重複歌曲",
           btn_duplicate_song_prevention_tips:
-            "防止同一首歌曲或同一藝術家的歌曲連續播放",
+            "防止同一首歌曲或同一藝術家連續播放",
         },
         en: {
           sponsored: "Sponsored Ads",
@@ -6263,10 +6268,21 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       return;
     }
 
+    // Guard: check if already initialized to avoid duplicate listeners/observers
+    if (unsafeWindow.__yt_dsp_initialized) {
+      sb_log("Duplicate song prevention already initialized, skipping");
+      return;
+    }
+    unsafeWindow.__yt_dsp_initialized = true;
+
     let lastPlayedSong = null;
     let lastPlayedArtist = null;
     const playHistory = [];
     const maxHistoryLength = 50;
+
+    // Debounce: track pending check and last processed song to avoid multiple timeouts
+    let pendingCheck = null;
+    let lastProcessedTitle = null;
 
     function getSongInfo() {
       const titleElement = document.querySelector(
@@ -6285,36 +6301,44 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     function shouldSkipSong(title, artist) {
       if (!title) return false;
 
+      // Check if same song is playing
       if (title === lastPlayedSong) {
-        sb_log(`Duplicate song detected: ${title}`, 0);
+        sb_log(`Duplicate song detected: ${title}`);
         return true;
       }
 
+      // Check if same artist is playing consecutively
       if (artist && artist === lastPlayedArtist) {
-        const recentArtists = playHistory.slice(-3).map((s) => s.artist);
-        if (recentArtists.filter((a) => a === artist).length >= 2) {
-          sb_log(`Duplicate artist detected: ${artist}`, 0);
-          return true;
-        }
+        sb_log(`Duplicate artist detected (consecutive): ${artist}`);
+        return true;
       }
 
       return false;
     }
 
     function updateHistory(title, artist) {
-      playHistory.push({ title, artist, timestamp: Date.now() });
+      playHistory.push({ title, artist });
       if (playHistory.length > maxHistoryLength) {
         playHistory.shift();
       }
       lastPlayedSong = title;
       lastPlayedArtist = artist;
+      lastProcessedTitle = title;
     }
 
     function handleSongChange() {
-      setTimeout(() => {
+      // Debounce: clear any pending check and schedule a new one
+      if (pendingCheck) {
+        clearTimeout(pendingCheck);
+      }
+
+      pendingCheck = setTimeout(() => {
         const { title, artist } = getSongInfo();
 
-        if (!title) return;
+        if (!title || title === lastProcessedTitle) {
+          pendingCheck = null;
+          return;
+        }
 
         if (shouldSkipSong(title, artist)) {
           const nextBtn =
@@ -6323,26 +6347,31 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
 
           if (nextBtn) {
             nextBtn.click();
-            sb_log(`Skipped duplicate: ${title}`, 0);
+            sb_log(`Skipped duplicate: ${title}`);
           }
         } else {
           updateHistory(title, artist);
         }
+
+        pendingCheck = null;
       }, 500);
     }
 
+    // Attach event listeners
+    const navFinishListener = handleSongChange;
+    const pageDataListener = handleSongChange;
+
     unsafeWindow.document.addEventListener(
       "yt-navigate-finish",
-      handleSongChange,
+      navFinishListener,
     );
     unsafeWindow.document.addEventListener(
       "yt-page-data-updated",
-      handleSongChange,
+      pageDataListener,
     );
 
-    const observer = new MutationObserver(() => {
-      handleSongChange();
-    });
+    // Attach mutation observer
+    const observer = new MutationObserver(handleSongChange);
 
     const playerElement = document.querySelector("ytmusic-player-bar");
     if (playerElement) {
@@ -6352,7 +6381,33 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       });
     }
 
-    sb_log("Duplicate song prevention initialized", 0);
+    // Store references for cleanup
+    unsafeWindow.__yt_dsp_cleanup = () => {
+      unsafeWindow.document.removeEventListener(
+        "yt-navigate-finish",
+        navFinishListener,
+      );
+      unsafeWindow.document.removeEventListener(
+        "yt-page-data-updated",
+        pageDataListener,
+      );
+      observer.disconnect();
+      if (pendingCheck) {
+        clearTimeout(pendingCheck);
+      }
+      unsafeWindow.__yt_dsp_initialized = false;
+      sb_log("Duplicate song prevention cleaned up");
+    };
+
+    sb_log("Duplicate song prevention initialized");
+  }
+
+  /* ====== CLEANUP DUPLICATE SONG PREVENTION ====== */
+
+  function cleanup_duplicate_song_prevention() {
+    if (typeof unsafeWindow.__yt_dsp_cleanup === "function") {
+      unsafeWindow.__yt_dsp_cleanup();
+    }
   }
 
   /* ====== HIDE CREATE BUTTON ====== */
