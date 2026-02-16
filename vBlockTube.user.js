@@ -2118,7 +2118,6 @@
             setTimeout(() => {
               search_input_node.blur();
 
-              // Auto-CLose Search Panel Function
               const closeSearchPanel = () => {
                 const escapeEvent = new KeyboardEvent("keydown", {
                   key: "Escape",
@@ -6301,13 +6300,11 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     function shouldSkipSong(title, artist) {
       if (!title) return false;
 
-      // Check if same song is playing
       if (title === lastPlayedSong) {
         sb_log(`Duplicate song detected: ${title}`);
         return true;
       }
 
-      // Check if same artist is playing consecutively
       if (artist && artist === lastPlayedArtist) {
         sb_log(`Duplicate artist detected (consecutive): ${artist}`);
         return true;
@@ -6357,7 +6354,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       }, 500);
     }
 
-    // Attach event listeners
     const navFinishListener = handleSongChange;
     const pageDataListener = handleSongChange;
 
@@ -6370,7 +6366,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       pageDataListener,
     );
 
-    // Attach mutation observer
     const observer = new MutationObserver(handleSongChange);
 
     const playerElement = document.querySelector("ytmusic-player-bar");
@@ -6381,7 +6376,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
       });
     }
 
-    // Store references for cleanup
     unsafeWindow.__yt_dsp_cleanup = () => {
       unsafeWindow.document.removeEventListener(
         "yt-navigate-finish",
