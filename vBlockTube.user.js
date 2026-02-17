@@ -272,62 +272,135 @@
     const style = unsafeWindow.document.createElement("style");
     style.textContent = `
       ytd-watch-flexy #secondary {
-        max-width: 402px;
+        max-width: 402px !important;
       }
 
-      #secondary #related {
-        .yt-lockup-view-model--vertical {
-          display: flex;
-          flex-direction: row;
-          height: inherit;
-        }
+      #secondary #related .yt-lockup-view-model--vertical {
+        display: flex !important;
+        flex-direction: row !important;
+        height: inherit !important;
+      }
 
-        .yt-lockup-view-model--vertical .yt-lockup-view-model__content-image {
-          display: flex;
-          flex: none;
-          padding-right: 16px;
-          justify-content: center;
-          width: 168px;
-          padding-bottom: 0;
-        }
+      #secondary #related .yt-lockup-view-model--vertical .yt-lockup-view-model__content-image {
+        display: flex !important;
+        flex: none !important;
+        padding-right: 16px !important;
+        justify-content: center !important;
+        width: 168px !important;
+        padding-bottom: 0 !important;
+      }
 
-        .yt-lockup-view-model__content-image {
-          max-width: 168px;
-        }
+      #secondary #related .yt-lockup-view-model__content-image {
+        max-width: 168px !important;
+      }
 
-        .yt-lockup-view-model--vertical .yt-lockup-view-model__metadata {
-          flex: 1;
-        }
+      #secondary #related .yt-lockup-view-model--vertical .yt-lockup-view-model__metadata {
+        flex: 1 !important;
+      }
 
-        .yt-lockup-view-model--vertical.yt-lockup-view-model--collection-stack-1 {
-          position: relative;
-          margin-top: 6px;
-        }
+      #secondary #related .yt-lockup-view-model--vertical.yt-lockup-view-model--collection-stack-1 {
+        position: relative !important;
+        margin-top: 6px !important;
+      }
 
-        .yt-lockup-view-model--vertical.yt-lockup-view-model--collection-stack-2 {
-          position: relative;
-          margin-top: 10px;
-        }
+      #secondary #related .yt-lockup-view-model--vertical.yt-lockup-view-model--collection-stack-2 {
+        position: relative !important;
+        margin-top: 10px !important;
+      }
 
-        .yt-lockup-view-model--vertical.yt-lockup-view-model--compact .yt-lockup-view-model__content-image {
-          padding-right: 8px;
-        }
+      #secondary #related .yt-lockup-view-model--vertical.yt-lockup-view-model--compact .yt-lockup-view-model__content-image {
+        padding-right: 8px !important;
+      }
 
-        .yt-lockup-metadata-view-model--vertical .yt-lockup-metadata-view-model__avatar {
-          display: none;
-        }
+      #secondary #related .yt-lockup-metadata-view-model--vertical .yt-lockup-metadata-view-model__avatar {
+        display: none !important;
+      }
 
-        ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns]:not(:has(ytd-item-section-renderer)) #items.ytd-watch-next-secondary-results-renderer,
-        ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] #contents.ytd-item-section-renderer {
-          grid-template-columns: 1fr;
-        }
+      #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns]:not(:has(ytd-item-section-renderer)) #items,
+      #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] #contents {
+        grid-template-columns: 1fr !important;
+      }
 
-        ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] .lockup.ytd-watch-next-secondary-results-renderer {
-          margin-bottom: 0;
-        }
+      #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] .lockup {
+        margin-bottom: 0 !important;
       }
     `;
     unsafeWindow.document.head.appendChild(style);
+
+    // Aggressively apply inline styles to sidebar elements as they're inserted
+    const applyInlineStyles = (element) => {
+      if (!element) return;
+
+      // Apply styles to lockup items
+      element
+        .querySelectorAll(".yt-lockup-view-model--vertical")
+        .forEach((el) => {
+          el.style.cssText =
+            "display: flex !important; flex-direction: row !important; height: inherit !important;";
+        });
+
+      element
+        .querySelectorAll(
+          ".yt-lockup-view-model--vertical .yt-lockup-view-model__content-image",
+        )
+        .forEach((el) => {
+          el.style.cssText =
+            "display: flex !important; flex: none !important; padding-right: 16px !important; justify-content: center !important; width: 168px !important; padding-bottom: 0 !important;";
+        });
+
+      element
+        .querySelectorAll(".yt-lockup-view-model__content-image")
+        .forEach((el) => {
+          if (!el.querySelector(".yt-lockup-view-model--vertical")) {
+            el.style.maxWidth = "168px !important";
+          }
+        });
+
+      element
+        .querySelectorAll(
+          ".yt-lockup-view-model--vertical .yt-lockup-view-model__metadata",
+        )
+        .forEach((el) => {
+          el.style.flex = "1 !important";
+        });
+
+      element
+        .querySelectorAll(
+          ".yt-lockup-metadata-view-model--vertical .yt-lockup-metadata-view-model__avatar",
+        )
+        .forEach((el) => {
+          el.style.display = "none !important";
+        });
+    };
+
+    // Initial application
+    const relatedContainer = $("#secondary #related");
+    if (relatedContainer) {
+      applyInlineStyles(relatedContainer);
+    }
+
+    // Watch for new elements and apply styles aggressively
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === "childList") {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) {
+              // Element node
+              applyInlineStyles(node);
+              applyInlineStyles($("#secondary #related"));
+            }
+          });
+        }
+      });
+    });
+
+    const secondary = $("#secondary");
+    if (secondary) {
+      observer.observe(secondary, {
+        childList: true,
+        subtree: true,
+      });
+    }
   }
 
   function restore_sidebar_layout_on_ytInitialData(data) {
@@ -1041,6 +1114,7 @@
     init_duplicate_song_prevention();
 
     apply_hide_buttons_css();
+    init_restore_related_sidebar_layout();
 
     hide_shorts_sections_if_disabled();
 
