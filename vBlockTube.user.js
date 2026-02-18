@@ -84,6 +84,30 @@
   const $ = unsafeWindow.document.querySelector.bind(unsafeWindow.document);
   const $$ = unsafeWindow.document.querySelectorAll.bind(unsafeWindow.document);
 
+  // Script Performance Optimization
+  const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
+  const throttle = (func, limit) => {
+    let inThrottle;
+    return function (...args) {
+      if (!inThrottle) {
+        func.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => (inThrottle = false), limit);
+      }
+    };
+  };
+
   const origin_console = console;
   const script_url =
     "https://update.greasyfork.org/scripts/557720/vBlockTube.user.js";
@@ -168,8 +192,8 @@
       const video = document.querySelector("video");
       if (video && !video.hasAttribute("data-quality-set")) {
         video.setAttribute("data-quality-set", "true");
-        setTimeout(setQuality, 500);
-        video.addEventListener("loadeddata", setQuality);
+        video.addEventListener("loadeddata", setQuality, { once: true });
+        debounce(setQuality, 300)();
       }
     });
 
@@ -191,12 +215,13 @@
       } catch (e) {}
     };
 
+    const debouncedSetSpeed = debounce(setSpeed, 300);
     const observer = new MutationObserver(() => {
       const video = document.querySelector("video");
       if (video && !video.hasAttribute("data-speed-set")) {
         video.setAttribute("data-speed-set", "true");
-        setSpeed();
-        video.addEventListener("loadeddata", setSpeed);
+        debouncedSetSpeed();
+        video.addEventListener("loadeddata", setSpeed, { once: true });
       }
     });
 
@@ -210,24 +235,23 @@
       const selectors = [
         'button[aria-label*="Remix" i]',
         'button[aria-label*="Duet" i]',
-        'ytm-pivot-bar-item-renderer[title*="Remix" i]',
-        'ytm-pivot-bar-item-renderer[title*="Duet" i]',
         ".reel-player-header-remix-button",
         ".reel-player-header-duet-button",
       ];
 
       selectors.forEach((selector) => {
-        document.querySelectorAll(selector).forEach((el) => {
-          if (el && !el.hasAttribute("data-remix-hidden")) {
-            el.style.display = "none";
-            el.setAttribute("data-remix-hidden", "true");
-          }
-        });
+        try {
+          document.querySelectorAll(selector).forEach((el) => {
+            if (el && el.style.display !== "none") {
+              el.style.display = "none";
+            }
+          });
+        } catch (e) {}
       });
     };
 
-    setInterval(hideRemixDuet, 500);
-    const observer = new MutationObserver(hideRemixDuet);
+    const debouncedHideRemixDuet = debounce(hideRemixDuet, 500);
+    const observer = new MutationObserver(debouncedHideRemixDuet);
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
@@ -327,11 +351,9 @@
     `;
     unsafeWindow.document.head.appendChild(style);
 
-    // Aggressively apply inline styles to sidebar elements as they're inserted
     const applyInlineStyles = (element) => {
       if (!element) return;
 
-      // Apply styles to lockup items
       element
         .querySelectorAll(".yt-lockup-view-model--vertical")
         .forEach((el) => {
@@ -373,25 +395,30 @@
         });
     };
 
-    // Initial application
     const relatedContainer = $("#secondary #related");
     if (relatedContainer) {
       applyInlineStyles(relatedContainer);
     }
 
-    // Watch for new elements and apply styles aggressively
+    const debouncedApplyStyles = debounce(() => {
+      applyInlineStyles($("#secondary #related"));
+    }, 300);
+
     const observer = new MutationObserver((mutations) => {
+      let hasRelevantChange = false;
       mutations.forEach((mutation) => {
         if (mutation.type === "childList") {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === 1) {
-              // Element node
+              hasRelevantChange = true;
               applyInlineStyles(node);
-              applyInlineStyles($("#secondary #related"));
             }
           });
         }
       });
+      if (hasRelevantChange) {
+        debouncedApplyStyles();
+      }
     });
 
     const secondary = $("#secondary");
@@ -425,16 +452,29 @@
       init_create_button_observer();
       init_quality_preset();
       init_speed_preset();
-      init_remove_remix_duet();
-      init_restore_red_progress_bar();
-      init_search_thumbnail_small();
-      init_restore_related_sidebar_layout();
-      init_disable_ambient_mode();
-      init_disable_saturated_hover();
-      init_disable_play_on_hover();
-      init_disable_end_cards();
-      init_interruptions_remover();
-      init_miniplayer_button();
+
+      if (document.readyState === "complete") {
+        runDeferredInit();
+      } else {
+        if ("requestIdleCallback" in window) {
+          requestIdleCallback(() => runDeferredInit(), { timeout: 5000 });
+        } else {
+          setTimeout(runDeferredInit, 100);
+        }
+      }
+
+      function runDeferredInit() {
+        init_remove_remix_duet();
+        init_restore_red_progress_bar();
+        init_search_thumbnail_small();
+        init_restore_related_sidebar_layout();
+        init_disable_ambient_mode();
+        init_disable_saturated_hover();
+        init_disable_play_on_hover();
+        init_disable_end_cards();
+        init_interruptions_remover();
+        init_miniplayer_button();
+      }
 
       const hoverToggleListener = (key, _oldValue, newValue) => {
         if (key !== channel_id || !newValue) return;
@@ -1001,7 +1041,8 @@
       element_monitor_observer?.disconnect();
       const configs = wait_configs[page_type] || [];
       if (configs.length === 0) return;
-      const callback = function (mutationsList) {
+
+      const debouncedCallback = debounce(function (mutationsList) {
         for (let i = configs.length - 1; i >= 0; i--) {
           const config = configs[i];
           const selector = config.seletor;
@@ -1039,8 +1080,9 @@
           element_monitor_observer.disconnect();
           return;
         }
-      };
-      element_monitor_observer = new MutationObserver(callback);
+      }, 100);
+
+      element_monitor_observer = new MutationObserver(debouncedCallback);
       element_monitor_observer.observe($("body"), {
         childList: true,
         subtree: true,
@@ -6398,7 +6440,6 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
     }
 
     function handleSongChange() {
-      // Debounce: clear any pending check and schedule a new one
       if (pendingCheck) {
         clearTimeout(pendingCheck);
       }
