@@ -108,6 +108,198 @@
     };
   };
 
+  // Selector Caching System
+  const selectorCache = {
+    cache: new Map(),
+    ttl: 5000,
+    timestamps: new Map(),
+    
+    get(selector) {
+      const now = Date.now();
+      const timestamp = this.timestamps.get(selector);
+      
+      if (this.cache.has(selector) && timestamp && (now - timestamp) < this.ttl) {
+        return this.cache.get(selector);
+      }
+      
+      try {
+        const element = $(selector);
+        if (element) {
+          this.cache.set(selector, element);
+          this.timestamps.set(selector, now);
+          return element;
+        }
+      } catch (e) {}
+      
+      this.cache.delete(selector);
+      this.timestamps.delete(selector);
+      return null;
+    },
+    
+    invalidate(selector) {
+      this.cache.delete(selector);
+      this.timestamps.delete(selector);
+    },
+    
+    invalidateAll() {
+      this.cache.clear();
+      this.timestamps.clear();
+    }
+  };
+
+  // Dark Mode System
+  const darkModeSystem = {
+    styleId: "vblocktube-dark-mode-style",
+    isDarkMode: false,
+    
+    getSystemPreference() {
+      return unsafeWindow.matchMedia("(prefers-color-scheme: dark)").matches;
+    },
+    
+    shouldUseDarkMode() {
+      if (!user_data.dark_mode) return false;
+      if (user_data.dark_mode === "on") return true;
+      if (user_data.dark_mode === "off") return false;
+      if (user_data.dark_mode === "auto") return this.getSystemPreference();
+      return false;
+    },
+    
+    apply() {
+      this.isDarkMode = this.shouldUseDarkMode();
+      const existing = unsafeWindow.document.getElementById(this.styleId);
+      
+      if (!this.isDarkMode) {
+        if (existing) existing.remove();
+        return;
+      }
+      
+      const darkCSS = `
+        #xxx_popup,
+        #yt-hide-buttons-popup,
+        #yt-error-popup,
+        .popup {
+          background-color: #1e1e1e !important;
+          color: #e0e0e0 !important;
+          border-color: #404040 !important;
+        }
+        
+        #xxx_popup .popup-header,
+        #yt-hide-buttons-popup #yt-hide-buttons-header,
+        #yt-error-header,
+        .popup-header {
+          background-color: #2d2d2d !important;
+          color: #e0e0e0 !important;
+          border-color: #404040 !important;
+        }
+        
+        #xxx_popup input[type="text"],
+        #xxx_popup input[type="number"],
+        #xxx_popup select,
+        #yt-hide-buttons-popup input[type="text"],
+        #yt-hide-buttons-popup select,
+        .popup input[type="text"],
+        .popup select {
+          background-color: #2d2d2d !important;
+          color: #e0e0e0 !important;
+          border-color: #404040 !important;
+        }
+        
+        #xxx_popup input[type="checkbox"],
+        #yt-hide-buttons-popup input[type="checkbox"],
+        .popup input[type="checkbox"] {
+          accent-color: #3498db;
+        }
+        
+        #xxx_popup button,
+        #yt-hide-buttons-popup button,
+        #yt-error-close,
+        #yt-error-copy,
+        .popup button {
+          background-color: #3498db !important;
+          color: white !important;
+        }
+        
+        #xxx_popup button:hover,
+        #yt-hide-buttons-popup button:hover,
+        #yt-error-close:hover,
+        #yt-error-copy:hover,
+        .popup button:hover {
+          background-color: #2980b9 !important;
+        }
+        
+        #xxx_popup .popup-content,
+        #yt-hide-buttons-popup .yt-hide-buttons-body,
+        #yt-error-body,
+        .popup-content {
+          background-color: #1e1e1e !important;
+          color: #e0e0e0 !important;
+        }
+        
+        #yt-error-body {
+          color: #e0e0e0 !important;
+        }
+        
+        #xxx_popup .yt-hb-section-title,
+        #xxx_popup .recommend-title,
+        #yt-error-header {
+          color: #e0e0e0 !important;
+          background-color: #2d2d2d !important;
+          border-color: #404040 !important;
+        }
+        
+        #xxx_popup label,
+        #yt-hide-buttons-popup label {
+          color: #e0e0e0 !important;
+        }
+        
+        #xxx_popup .popup-body,
+        #yt-hide-buttons-popup .yt-hide-buttons-body {
+          background-color: #1e1e1e !important;
+        }
+        
+        #xxx_popup h1,
+        #xxx_popup .item-group {
+          color: #e0e0e0 !important;
+        }
+        
+        /* Scrollbar styling for dark mode */
+        #xxx_popup::-webkit-scrollbar,
+        #yt-error-body::-webkit-scrollbar,
+        #yt-hide-buttons-popup::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        #xxx_popup::-webkit-scrollbar-track,
+        #yt-error-body::-webkit-scrollbar-track,
+        #yt-hide-buttons-popup::-webkit-scrollbar-track {
+          background: #2d2d2d !important;
+        }
+        
+        #xxx_popup::-webkit-scrollbar-thumb,
+        #yt-error-body::-webkit-scrollbar-thumb,
+        #yt-hide-buttons-popup::-webkit-scrollbar-thumb {
+          background: #404040 !important;
+          border-radius: 4px;
+        }
+        
+        #xxx_popup::-webkit-scrollbar-thumb:hover,
+        #yt-error-body::-webkit-scrollbar-thumb:hover,
+        #yt-hide-buttons-popup::-webkit-scrollbar-thumb:hover {
+          background: #555555 !important;
+        }
+      `;
+      
+      if (!existing) {
+        const style = unsafeWindow.document.createElement("style");
+        style.id = this.styleId;
+        style.textContent = darkCSS;
+        unsafeWindow.document.head.appendChild(style);
+      } else {
+        existing.textContent = darkCSS;
+      }
+    }
+  };
+
   const origin_console = console;
   const script_url =
     "https://update.greasyfork.org/scripts/557720/vBlockTube.user.js";
@@ -452,6 +644,7 @@
       init_create_button_observer();
       init_quality_preset();
       init_speed_preset();
+      darkModeSystem.apply();
 
       if (document.readyState === "complete") {
         runDeferredInit();
@@ -479,6 +672,7 @@
       const hoverToggleListener = (key, _oldValue, newValue) => {
         if (key !== channel_id || !newValue) return;
         user_data = newValue;
+        darkModeSystem.apply();
         init_disable_saturated_hover();
         init_disable_play_on_hover();
         init_disable_end_cards();
@@ -1026,6 +1220,9 @@
   }
 
   function on_page_change() {
+    // Invalidate selector cache on page change
+    selectorCache.invalidateAll();
+    
     // Cleanup duplicate song prevention when leaving YT Music
     if (!["yt_music_home", "yt_music_watch"].includes(page_type)) {
       cleanup_duplicate_song_prevention();
@@ -3227,6 +3424,24 @@ label{
           ],
         },
         {
+          id: "dark_mode",
+          title: "Dark Mode",
+          items: [
+            {
+              tag: "Auto",
+              value: "auto",
+            },
+            {
+              tag: "On",
+              value: "on",
+            },
+            {
+              tag: "Off",
+              value: "off",
+            },
+          ],
+        },
+        {
           id: "global_shorts_block",
           title: "Block all Shorts",
           items: [
@@ -3503,6 +3718,12 @@ label{
   function handle_recommend_radio(input_obj) {
     user_data[input_obj.parentNode.parentNode.id] = input_obj.value;
     user_data_api.set();
+    
+    // Apply dark mode if setting changed
+    if (input_obj.parentNode.parentNode.id === "dark_mode") {
+      darkModeSystem.apply();
+    }
+    
     config_api.config_init(user_data.language);
   }
 
@@ -5064,6 +5285,7 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
           disable_saturated_hover: "off",
           restore_red_progress_bar: "on",
           search_thumbnail_small: "on",
+          dark_mode: "auto",
           login: false,
         };
         let diff = false;
@@ -5167,9 +5389,13 @@ ytd-video-secondary-info-renderer .yt-chip-cloud-chip-renderer,
           "hide_ask_button",
           "hide_download_button",
           "global_shorts_block",
+          "dark_mode",
         ];
         for (const key of newHideKeys) {
-          if (tmp_user_data[key] === undefined) {
+          if (key === "dark_mode" && tmp_user_data[key] === undefined) {
+            tmp_user_data[key] = "auto";
+            diff = true;
+          } else if (key !== "dark_mode" && tmp_user_data[key] === undefined) {
             tmp_user_data[key] = "off";
             diff = true;
           }
