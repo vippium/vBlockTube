@@ -113,6 +113,13 @@
       cache: new Map(),
       ttl: 5000,
       timestamps: new Map(),
+      frequentSelectors: {
+        video: "video",
+        player: ".html5-video-player",
+        secondary: "#secondary",
+        videoContainer: ".html5-video-container",
+        playerContainer: "#movie_player"
+      },
 
       get(selector) {
         const now = Date.now();
@@ -136,6 +143,27 @@
         return null;
       },
 
+      // Fast getters for frequently accessed elements
+      getVideo() {
+        return this.get(this.frequentSelectors.video);
+      },
+
+      getPlayer() {
+        return this.get(this.frequentSelectors.player);
+      },
+
+      getSecondary() {
+        return this.get(this.frequentSelectors.secondary);
+      },
+
+      getVideoContainer() {
+        return this.get(this.frequentSelectors.videoContainer);
+      },
+
+      getPlayerContainer() {
+        return this.get(this.frequentSelectors.playerContainer);
+      },
+
       invalidate(selector) {
         this.cache.delete(selector);
         this.timestamps.delete(selector);
@@ -145,6 +173,64 @@
         this.cache.clear();
         this.timestamps.clear();
       },
+    };
+
+    const observerManager = {
+      observers: new Map(),
+      listeners: new Map(),
+      mediaQueryListeners: [],
+
+      addObserver(name, observer) {
+        if (this.observers.has(name)) {
+          this.observers.get(name).disconnect();
+        }
+        this.observers.set(name, observer);
+      },
+
+      removeObserver(name) {
+        if (this.observers.has(name)) {
+          this.observers.get(name).disconnect();
+          this.observers.delete(name);
+        }
+      },
+
+      addListener(target, eventName, handler, options) {
+        if (!target) return;
+        target.addEventListener(eventName, handler, options);
+        const key = `${target.nodeName || 'window'}_${eventName}`;
+        if (!this.listeners.has(key)) {
+          this.listeners.set(key, []);
+        }
+        this.listeners.get(key).push({ target, eventName, handler, options });
+      },
+
+      addMediaQueryListener(mql, handler) {
+        mql.addListener(handler);
+        this.mediaQueryListeners.push({ mql, handler });
+      },
+
+      disconnectAll() {
+        for (const [name, observer] of this.observers) {
+          observer.disconnect();
+        }
+        this.observers.clear();
+
+        for (const [key, listeners] of this.listeners) {
+          for (const { target, eventName, handler } of listeners) {
+            target.removeEventListener(eventName, handler);
+          }
+        }
+        this.listeners.clear();
+
+        for (const { mql, handler } of this.mediaQueryListeners) {
+          mql.removeListener(handler);
+        }
+        this.mediaQueryListeners = [];
+      },
+
+      logStats() {
+        log(`[ObserverManager] Observers: ${this.observers.size}, Listeners: ${this.listeners.size}, MediaQueries: ${this.mediaQueryListeners.length}`, 0);
+      }
     };
 
     const darkModeSystem = {
@@ -352,6 +438,7 @@
             }
           };
           this.mediaQuery.addListener(this.mediaListener);
+          observerManager.addMediaQueryListener(this.mediaQuery, this.mediaListener);
         }
       },
 
@@ -419,10 +506,10 @@
             return;
           return;
 
-          const video = document.querySelector("video");
+          const video = selectorCache.getVideo();
           if (!video) return;
 
-          const player = document.querySelector(".html5-video-player");
+          const player = selectorCache.getPlayer();
           if (!player) return;
 
           const targetQuality = user_data.default_quality;
@@ -443,15 +530,16 @@
       };
 
       const observer = new MutationObserver(() => {
-        const video = document.querySelector("video");
+        const video = selectorCache.getVideo();
         if (video && !video.hasAttribute("data-quality-set")) {
           video.setAttribute("data-quality-set", "true");
-          video.addEventListener("loadeddata", setQuality, { once: true });
+          observerManager.addListener(video, "loadeddata", setQuality, { once: true });
           debounce(setQuality, 300)();
         }
       });
 
-      observer.observe(document.body, { childList: true, subtree: true });
+      observer.observe($("body"), { childList: true, subtree: true });
+      observerManager.addObserver("quality_preset", observer);
     }
 
     function init_speed_preset() {
@@ -459,7 +547,7 @@
         try {
           if (!user_data.default_speed) return;
 
-          const video = document.querySelector("video");
+          const video = selectorCache.getVideo();
           if (!video) return;
 
           const targetSpeed = parseFloat(user_data.default_speed);
@@ -471,15 +559,16 @@
 
       const debouncedSetSpeed = debounce(setSpeed, 300);
       const observer = new MutationObserver(() => {
-        const video = document.querySelector("video");
+        const video = selectorCache.getVideo();
         if (video && !video.hasAttribute("data-speed-set")) {
           video.setAttribute("data-speed-set", "true");
           debouncedSetSpeed();
-          video.addEventListener("loadeddata", setSpeed, { once: true });
+          observerManager.addListener(video, "loadeddata", setSpeed, { once: true });
         }
       });
 
-      observer.observe(document.body, { childList: true, subtree: true });
+      observer.observe($("body"), { childList: true, subtree: true });
+      observerManager.addObserver("speed_preset", observer);
     }
 
     function init_remove_remix_duet() {
@@ -495,7 +584,7 @@
 
         selectors.forEach((selector) => {
           try {
-            document.querySelectorAll(selector).forEach((el) => {
+            $$$(selector).forEach((el) => {
               if (el && el.style.display !== "none") {
                 el.style.display = "none";
               }
@@ -506,7 +595,8 @@
 
       const debouncedHideRemixDuet = debounce(hideRemixDuet, 500);
       const observer = new MutationObserver(debouncedHideRemixDuet);
-      observer.observe(document.body, { childList: true, subtree: true });
+      observer.observe($("body"), { childList: true, subtree: true });
+      observerManager.addObserver("remix_duet", observer);
     }
 
     function init_restore_red_progress_bar() {
@@ -1284,6 +1374,7 @@
 
     function on_page_change() {
       selectorCache.invalidateAll();
+      observerManager.disconnectAll();
 
       // Cleanup duplicate song prevention when leaving YT Music
       if (!["yt_music_home", "yt_music_watch"].includes(page_type)) {
@@ -1297,7 +1388,6 @@
       }
 
       function element_monitor() {
-        element_monitor_observer?.disconnect();
         const configs = wait_configs[page_type] || [];
         if (configs.length === 0) return;
 
@@ -1336,16 +1426,17 @@
           }
           if (configs.length === 0) {
             log("monitor end", 0);
-            element_monitor_observer.disconnect();
+            observerManager.removeObserver("element_monitor");
             return;
           }
         }, 100);
 
-        element_monitor_observer = new MutationObserver(debouncedCallback);
-        element_monitor_observer.observe($("body"), {
+        const observer = new MutationObserver(debouncedCallback);
+        observer.observe($("body"), {
           childList: true,
           subtree: true,
         });
+        observerManager.addObserver("element_monitor", observer);
       }
 
       const wait_configs = {
@@ -1487,7 +1578,7 @@
         const video_node = page_type === "yt_shorts" ? node : $("video");
         if (!video_node || video_node.inject_shorts_progress) return;
         video_node.inject_shorts_progress = true;
-        video_node.addEventListener("timeupdate", function () {
+        observerManager.addListener(video_node, "timeupdate", function () {
           if (user_data.shorts_add_video_progress === "off") return;
           const shape_button =
             page_type === "yt_shorts"
@@ -1555,7 +1646,7 @@
             return false;
           },
         });
-        video_node?.addEventListener("ended", function () {
+        observerManager.addListener(video_node, "ended", function () {
           if (user_data.shorts_auto_scroll === "on") {
             if (page_type === "yt_shorts") {
               $(
@@ -6558,7 +6649,7 @@
               video.removeEventListener("durationchange", durationWatcher);
             }
           };
-          video.addEventListener("durationchange", durationWatcher);
+          observerManager.addListener(video, "durationchange", durationWatcher);
         }
 
         const skipIfNeeded = () => {
@@ -6593,8 +6684,8 @@
           }
         };
 
-        video.addEventListener("timeupdate", skipIfNeeded);
-        video.addEventListener("seeking", onSeeking);
+        observerManager.addListener(video, "timeupdate", skipIfNeeded);
+        observerManager.addListener(video, "seeking", onSeeking);
         sb_eventListenersAttached = true;
 
         const watcher = unsafeWindow.setInterval(() => {
