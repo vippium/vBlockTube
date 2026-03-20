@@ -22,7 +22,7 @@
 // @grant        GM_listValues
 // @grant        GM_deleteValue
 // @run-at       document-start
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=youtube.com
+// @icon         https://cdn.iconscout.com/icon/free/png-256/free-youtube-logo-icon-svg-download-png-3649968.png?f=webp
 // @homepageURL  https://github.com/vippium/vBlockTube
 // @downloadURL  https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/vBlockTube.user.js
 // @updateURL    https://raw.githubusercontent.com/vippium/vBlockTube/refs/heads/main/vBlockTube.user.js
