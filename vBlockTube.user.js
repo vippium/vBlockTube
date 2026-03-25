@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
-// @version      1.7.6
+// @version      1.8.0
 // @description  Blocks YouTube ads and provides enhanced features for a better viewing experience.
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -504,6 +504,64 @@
     "auto",
   ];
 
+  function init_old_player_ui() {
+    if (user_data.old_player_ui !== "on") return;
+
+    const DELHI_FLAGS_REGEX =
+      /&?delhi_modern_web_player(?:=true)?|&?delhi_modern_web_player_icons=true/g;
+    const STYLE_ID = "yt-old-player-ui-style";
+
+    function stripDelhiFlags() {
+      const yt = unsafeWindow.yt;
+      if (!yt?.config_?.WEB_PLAYER_CONTEXT_CONFIGS) return false;
+      let changed = false;
+      for (const key in yt.config_.WEB_PLAYER_CONTEXT_CONFIGS) {
+        const cfg = yt.config_.WEB_PLAYER_CONTEXT_CONFIGS[key];
+        if (typeof cfg?.serializedExperimentFlags === "string") {
+          const cleaned = cfg.serializedExperimentFlags
+            .replace(DELHI_FLAGS_REGEX, "")
+            .replace(/&&+/g, "&")
+            .replace(/^&|&$/g, "");
+          if (cleaned !== cfg.serializedExperimentFlags) {
+            cfg.serializedExperimentFlags = cleaned;
+            changed = true;
+          }
+        }
+      }
+      return changed;
+    }
+
+    function injectOldPlayerCSS() {
+      if (unsafeWindow.document.getElementById(STYLE_ID)) return;
+      const style = unsafeWindow.document.createElement("style");
+      style.id = STYLE_ID;
+      style.textContent = `
+        .ytp-fullscreen-quick-actions,
+        .ytp-fullscreen-grid {
+          display: none !important;
+        }
+      `;
+      (unsafeWindow.document.head || unsafeWindow.document.documentElement).appendChild(style);
+    }
+
+    injectOldPlayerCSS();
+
+    const observer = new MutationObserver(() => {
+      if (stripDelhiFlags()) {
+        observer.disconnect();
+      }
+    });
+    observer.observe(unsafeWindow.document.documentElement, {
+      childList: true,
+      subtree: false,
+    });
+
+    unsafeWindow.addEventListener("yt-navigate-finish", () => {
+      stripDelhiFlags();
+      injectOldPlayerCSS();
+    });
+  }
+
   function init_quality_preset() {
     const setQuality = () => {
       try {
@@ -787,6 +845,10 @@
     return data;
   }
 
+  // Run old player UI patch at document-start, before init(), so Delhi flags
+  // are stripped before the player config is first read.
+  init_old_player_ui();
+
   init();
   function init() {
     log("Initialization started!" + href, 0);
@@ -873,22 +935,17 @@
       };
     } catch (error) {
       if (unsafeWindow.trustedTypes) {
-        const policy = unsafeWindow.trustedTypes.createPolicy("eval-policy", {
+        const policy = unsafeWindow.trustedTypes.createPolicy("eval", {
           createScript: (script) => {
             return script;
           },
         });
         return function (str) {
-          try {
-            return policy.createScript(str);
-          } catch (e) {
-            return str;
-          }
+          return policy.createScript(str);
         };
+      } else {
+        log("trustedTypes not support", error, -1);
       }
-      return function (str) {
-        return str;
-      };
     }
   }
 
@@ -1124,154 +1181,184 @@
           origin_createElement.toString.bind(origin_createElement);
       },
       request() {
+        async function deal_response(name, response, rule) {
+          if (!rule) return response;
+          let is_deal = false;
+          const responseClone = response.clone();
+          let result = await responseClone.text();
+          let origin_result = result;
+          if (name === 'subscribe' || name === 'unsubscribe') {
+            let match_list = result.match(/channelId":\\"(.*?)"/);
+            const match_channel_id = match_list && match_list.length > 1 ? match_list[1] : '';
+            let channel_infos = user_data.channel_infos;
+            if (match_channel_id) {
+              if (name === 'unsubscribe') {
+                let index = channel_infos.ids.indexOf(match_channel_id);
+                if (index > -1) {
+                  channel_infos.ids.splice(index, 1);
+                  channel_infos.names.splice(index, 1);
+                }
+              } else {
+                channel_infos.ids.push(match_channel_id);
+                channel_infos.names.push('');
+              }
+              user_data.channel_infos = channel_infos;
+              user_data_api.set();
+              log(name, match_channel_id, 0);
+            }
+            is_deal = true;
+          }
+          if (name === 'playlist') {
+            let obj;
+            try {
+              obj = JSON.parse(result);
+              data_process.obj_process(obj.playerResponse, config_api.common_ytInitialPlayerResponse_rule, false);
+              data_process.obj_process(obj.response, config_api.get_rules('yt_watch', 'init'), false);
+              result = JSON.stringify(obj);
+            } catch (error) {
+              log('playlist parsing failed', error, -1);
+              result = origin_result;
+            }
+            is_deal = true;
+          }
+          if (!is_deal) {
+            let start_time = Date.now();
+            result = data_process.text_process(result, rule, 'insert', false);
+            log(name + ' time:', Date.now() - start_time, 'spend_time');
+          }
+          if (!result) {
+            result = origin_result;
+            debugger;
+          }
+          return new Response(result, response);
+        }
+
         const origin_fetch = unsafeWindow.fetch;
-        const Request_clone = unsafeWindow.Request.prototype.clone;
-        const Response_clone = unsafeWindow.Response.prototype.clone;
-
-        function filterShortsAd(entry) {
-          return entry.command?.reelWatchEndpoint?.adClientParams?.isAd != true;
+        if (!check_native('fetch', origin_fetch)) {
+          log('fetch have been modified', -1);
         }
-
-        function patchPlayerResponse(playerResponse) {
-          delete playerResponse.adPlacements;
-          delete playerResponse.adSlots;
-          delete playerResponse.playerAds;
-        }
-
-        function processPlayerResponse(data, source) {
-          if (data.videoDetails) {
-            patchPlayerResponse(data);
-          } else if (
-            Array.isArray(data) &&
-            data[0]?.playerResponse?.videoDetails
-          ) {
-            patchPlayerResponse(data[0].playerResponse);
-          }
-        }
-
-        function processReelWatchSequenceResponse(data) {
-          if (
-            Array.isArray(data.entries) &&
-            data.entries[0]?.command?.reelWatchEndpoint
-          ) {
-            data.entries = data.entries.filter(filterShortsAd);
-          }
-          if (
-            Array.isArray(data.reelWatchSequenceResponse?.entries) &&
-            data.reelWatchSequenceResponse.entries[0]?.command
-              ?.reelWatchEndpoint
-          ) {
-            data.reelWatchSequenceResponse.entries =
-              data.reelWatchSequenceResponse.entries.filter(filterShortsAd);
-          }
-        }
-
-        function proxyFetch(target, thisArg, argArray) {
-          let request = argArray?.[0];
-          let url = request?.url;
-          if (
-            !(request instanceof unsafeWindow.Request) ||
-            !url ||
-            (!url.includes("/player") &&
-              !url.includes("watch?") &&
-              !url.includes("/reel_watch_sequence") &&
-              !url.includes("/browse")) ||
-            !Request_clone.call(request).url.startsWith("https://")
-          ) {
-            return Reflect.apply(target, thisArg, argArray);
-          }
-
-          return Reflect.apply(target, thisArg, argArray).then((response) => {
-            return Response_clone.call(response)
-              .text()
-              .then((responseText) => {
-                try {
-                  let data = JSON.parse(responseText);
-                  if (url.includes("/player") || url.includes("watch?")) {
-                    processPlayerResponse(data, "fetch");
-                  } else if (url.includes("/reel_watch_sequence")) {
-                    processReelWatchSequenceResponse(data);
-                  } else if (url.includes("/browse")) {
-                    if (data && typeof data === "object") {
-                      try {
-                        let rules = config_api.get_rules(page_type);
-                        if (rules && rules.ytInitialData_rule) {
-                          data_process.obj_process(
-                            data,
-                            rules.ytInitialData_rule,
-                            false,
-                          );
-                        }
-                      } catch (e) {}
+        fake_fetch = function () {
+          const fetch_ = async function (uri, options) {
+            async function fetch_request(response) {
+              let url = response.url;
+              inject_info.fetch = true;
+              let request_body;
+              try {
+                request_body = uri.body_ ? JSON.parse(uri.body_) : null;
+              } catch (error) {
+                request_body = null;
+              }
+              if (url.includes('youtubei/v1/next')) {
+                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_watch' : 'yt_watch', request_body?.videoId ? "init" : 'next');
+                return await deal_response('next', response, rule);
+              }
+              if (url.includes('youtubei/v1/player')) {
+                return await deal_response('player', response, config_api.common_ytInitialPlayerResponse_rule);
+              }
+              if (url.includes('youtubei/v1/reel/reel_watch_sequence')) {
+                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_shorts' : 'yt_shorts').ytInitialReelWatchSequenceResponse_rule;
+                return await deal_response('reel_watch_sequence', response, rule);
+              }
+              if (url.includes('youtubei/v1/reel/reel_item_watch')) {
+                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_shorts' : 'yt_shorts').ytInitialData_rule;
+                return await deal_response('reel_item_watch', response, rule);
+              }
+              if (url.includes('youtubei/v1/browse?prettyPrint=false')) {
+                let browse_id = request_body?.browseId;
+                let rule;
+                if (href.includes('https://music.youtube.com/')) {
+                  rule = config_api.get_rules('yt_music', 'browse').ytInitialData_rule;
+                }
+                if (!rule && (['yt_home', 'mobile_yt_home'].includes(page_type) || browse_id === 'FEwhat_to_watch')) {
+                  if (!browse_id) {
+                    let node, category_text, node_list, node_index;
+                    if (mobile_web) {
+                      node = $('#filter-chip-bar > div > ytm-chip-cloud-chip-renderer.selected');
+                      node_list = $$('#filter-chip-bar > div > ytm-chip-cloud-chip-renderer');
+                      node_index = Array.from(node_list).indexOf(node);
+                      if (node_index !== 1) return response;
+                    } else {
+                      node = $('#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer.iron-selected');
+                      node_list = $$('#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer');
+                      node_index = Array.from(node_list).indexOf(node);
+                      if (node_index !== 0) return response;
                     }
                   }
-                  return new Response(JSON.stringify(data), response);
-                } catch (error) {}
-                return response;
-              });
-          });
-        }
-
-        try {
-          Object.defineProperty(unsafeWindow, "ytInitialPlayerResponse", {
-            set(data) {
-              if (data?.videoDetails) {
-                patchPlayerResponse(data);
-              }
-              unsafeWindow._ytInitialPlayerResponse = data;
-            },
-            get() {
-              return unsafeWindow._ytInitialPlayerResponse;
-            },
-            configurable: true,
-          });
-        } catch (error) {}
-
-        try {
-          Object.defineProperty(
-            unsafeWindow,
-            "ytInitialReelWatchSequenceResponse",
-            {
-              set(data) {
-                if (data != null) {
-                  processReelWatchSequenceResponse(data);
+                  rule = config_api.get_rules(mobile_web ? 'mobile_yt_home' : 'yt_home', request_body?.browseId ? 'init' : 'browse').ytInitialData_rule;
                 }
-                unsafeWindow._ytInitialReelWatchSequenceResponse = data;
-              },
-              get() {
-                return unsafeWindow._ytInitialReelWatchSequenceResponse;
-              },
-              configurable: true,
-            },
-          );
-        } catch (error) {}
+                return await deal_response('browse', response, rule);
+              }
+              if (url.startsWith('https://www.youtube.com/playlist?list=')) {
+                return await deal_response('playlist', response, []);
+              }
+              if (url.includes('/youtubei/v1/search')) {
+                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_search' : 'yt_search').ytInitialData_rule;
+                return await deal_response('search', response, rule);
+              }
+              if (url.includes('/unsubscribe?prettyPrint=false')) {
+                return await deal_response('unsubscribe', response, []);
+              }
+              if (url.includes('/subscribe?prettyPrint=false')) {
+                return await deal_response('subscribe', response, []);
+              }
+              if (url.includes('/v1/get_watch')) {
+                const originalBody = response.body;
+                const reader = originalBody.getReader();
+                const stream = new ReadableStream({
+                  async start(controller) {
+                    const chunks = [];
+                    try {
+                      while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        chunks.push(value);
+                      }
+                      const allChunks = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+                      let position = 0;
+                      for (const chunk of chunks) {
+                        allChunks.set(chunk, position);
+                        position += chunk.length;
+                      }
+                      let text = new TextDecoder().decode(allChunks);
+                      const save = text;
+                      try {
+                        let json = JSON.parse(text);
+                        const rules = [
+                          "abs:[0].playerResponse.adBreakHeartbeatParams=- $exist",
+                          "abs:[0].playerResponse.adSlots=- $exist",
+                          "abs:[0].playerResponse.adPlacements=- $exist",
+                          "adSlotRenderer.=- $exist",
+                          "merchandiseShelfRenderer.=- $exist"
+                        ];
+                        const traverse_all = true;
+                        data_process.obj_process(json, rules, { traverse_all });
+                        text = JSON.stringify(json);
+                      } catch (error) {
+                        log('fetch response text error', error, -1);
+                        text = save;
+                      }
+                      const modifiedData = new TextEncoder().encode(text);
+                      controller.enqueue(modifiedData);
+                      controller.close();
+                    } catch (error) {
+                      log('Stream error: ' + error, -1);
+                      controller.error(error);
+                    }
+                  }
+                });
+                Object.defineProperty(response, 'body', {
+                  get() { return stream; }
+                });
+              }
+              return response;
+            }
+            return origin_fetch(uri, options).then(fetch_request);
+          };
+          return fetch_;
+        }();
+        unsafeWindow.fetch = fake_fetch;
+        unsafeWindow.fetch.toString = origin_fetch.toString.bind(origin_fetch);
 
-        try {
-          unsafeWindow.fetch = new Proxy(origin_fetch, { apply: proxyFetch });
-        } catch (error) {}
-
-        fake_fetch = origin_fetch;
-        const origin_fetch_impl = async function (uri, options) {
-          const url_str =
-            typeof uri === "string"
-              ? uri
-              : uri?.url_ || uri?.toString?.() || "";
-
-          if (
-            url_str.includes("/youtubei/v1/log_event") ||
-            url_str.includes("/api/stats/qoe") ||
-            url_str.includes("/ptracking") ||
-            url_str.includes("/generate_204") ||
-            url_str.includes("googleads.g.doubleclick.net")
-          ) {
-            return new Response("{}", {
-              status: 204,
-              statusText: "No Content",
-            });
-          }
-
-          return origin_fetch(uri, options);
-        };
         const origin_Request = unsafeWindow.Request;
         if (!check_native("Request", origin_Request)) {
           log("Request have been modified", -1);
@@ -1280,7 +1367,21 @@
           constructor(input, options = void 0) {
             super(input, options);
             this.url_ = input;
-            if (options && "body" in options) this["body_"] = options["body"];
+            if (options && "body" in options) {
+              setTimeout(async () => {
+                try {
+                  const ds = new DecompressionStream('gzip');
+                  const stream = new Blob([options.body]).stream().pipeThrough(ds);
+                  const requestBody = await new Response(stream).text();
+                  this.body_ = requestBody;
+                } catch (e) {
+                  // fallback for non-gzip bodies
+                  try {
+                    this.body_ = typeof options.body === 'string' ? options.body : null;
+                  } catch (e2) {}
+                }
+              }, 0);
+            }
           }
         };
 
@@ -1289,18 +1390,6 @@
         ) {
           open(method, url, ...opts) {
             inject_info.xhr = true;
-
-            if (
-              url.includes("/youtubei/v1/log_event") ||
-              url.includes("/api/stats/qoe") ||
-              url.includes("/ptracking") ||
-              url.includes("/generate_204") ||
-              url.includes("googleads.g.doubleclick.net")
-            ) {
-              this._blocked = true;
-              return this;
-            }
-
             if (
               ["mobile_yt_watch"].includes(page_type) &&
               url.includes("m.youtube.com/watch?v")
@@ -1319,9 +1408,6 @@
             return super.open(method, url, ...opts);
           }
           send(body) {
-            if (this._blocked) {
-              return;
-            }
             this.body_ = body;
             super.send(body);
           }
@@ -2355,6 +2441,8 @@
                   "",
                 )}.adSlotRenderer$exist`,
               );
+            // youtuber merchandise shelf ad (synced from upstream)
+            !mobile_web && type === "init" && player_bottom_rules.push(`/.merchandiseShelfRenderer$exist`);
             video_item_rules.push(
               `${video_sub_path.replace(/\.[^\.]+$/, ".adSlotRenderer$exist")}`,
             );
@@ -2559,6 +2647,8 @@
         ![
           "yt_watch",
           "yt_home",
+          "yt_search",
+          "mobile_yt_search",
           "mobile_yt_home_searching",
           "mobile_yt_watch_searching",
           "yt_shorts",
@@ -3659,6 +3749,21 @@
             },
           ],
         },
+        {
+          id: "old_player_ui",
+          title: "Old Player UI",
+          requires_reload: true,
+          items: [
+            {
+              tag: "btn_lable_open",
+              value: "on",
+            },
+            {
+              tag: "btn_lable_close",
+              value: "off",
+            },
+          ],
+        },
       ],
     };
 
@@ -3711,6 +3816,8 @@
     [
       "yt_home",
       "yt_watch",
+      "yt_search",
+      "mobile_yt_search",
       "mobile_yt_watch_searching",
       "mobile_yt_home_searching",
     ].includes(page_type) && (win_config = home_watch_config);
@@ -3878,15 +3985,24 @@
   }
 
   function handle_recommend_radio(input_obj) {
-    user_data[input_obj.parentNode.parentNode.id] = input_obj.value;
+    const setting_id = input_obj.parentNode.parentNode.id;
+    user_data[setting_id] = input_obj.value;
     user_data_api.set();
 
     // Apply dark mode if setting changed
-    if (input_obj.parentNode.parentNode.id === "dark_mode") {
+    if (setting_id === "dark_mode") {
       darkModeSystem.apply();
     }
 
     config_api.config_init(user_data.language);
+
+    // Settings that require a full page reload to take effect
+    const reload_required_ids = new Set(["old_player_ui"]);
+    if (reload_required_ids.has(setting_id)) {
+      if (confirm("This setting requires a page reload to take effect. Reload now?")) {
+        unsafeWindow.location.reload();
+      }
+    }
   }
 
   function init_disable_saturated_hover() {
@@ -5444,7 +5560,9 @@
           hide_fullscreen_controls: "off",
           hide_ai_summary: "off",
           hide_microphone_icon: "off",
+          hide_paid_promotion: "off",
           disable_saturated_hover: "off",
+          old_player_ui: "off",
           restore_red_progress_bar: "on",
           search_thumbnail_small: "on",
           dark_mode: "auto",
@@ -5552,6 +5670,7 @@
           "hide_download_button",
           "global_shorts_block",
           "dark_mode",
+          "old_player_ui",
         ];
         for (const key of newHideKeys) {
           if (key === "dark_mode" && tmp_user_data[key] === undefined) {
@@ -7163,6 +7282,24 @@
       );
     }
 
+    if (user_data.hide_paid_promotion === "on") {
+      rules.push(
+        ".ytp-paid-content-overlay { display: none !important; }",
+      );
+      rules.push(
+        ".ytp-paid-content-overlay-link { display: none !important; }",
+      );
+      rules.push(
+        ".YtmPaidContentOverlayHost { display: none !important; }",
+      );
+      rules.push(
+        "ytm-paid-content-overlay-renderer { display: none !important; }",
+      );
+      rules.push(
+        '[class*="paid-content-overlay"] { display: none !important; }',
+      );
+    }
+
     rules.push(`
         #cpfyt-miniplayer-button {
           display: inline-block !important;
@@ -7470,6 +7607,7 @@
       row("hb_ai_summary", "Hide AI summaries"),
       row("hb_microphone", "Hide microphone icon"),
       row("hb_restore_red_progress_bar", "Restore red progress bar"),
+      row("hb_paid_promotion", "Hide paid promotion overlay"),
     ];
 
     const rows = [...actionRows, ...otherRows];
@@ -7547,6 +7685,7 @@
       ["hb_ai_summary", "hide_ai_summary"],
       ["hb_microphone", "hide_microphone_icon"],
       ["hb_restore_red_progress_bar", "restore_red_progress_bar"],
+      ["hb_paid_promotion", "hide_paid_promotion"],
     ];
 
     const checkboxById = {};
