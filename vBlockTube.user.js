@@ -11,6 +11,7 @@
 // @exclude      https://www.youtube.com/live_chat*
 // @exclude      https://www.youtube.com/embed*
 // @connect      api.sponsor.ajay.app
+// @connect      update.greasyfork.org
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
@@ -84,7 +85,7 @@
   const $ = unsafeWindow.document.querySelector.bind(unsafeWindow.document);
   const $$ = unsafeWindow.document.querySelectorAll.bind(unsafeWindow.document);
 
-  // Script Performance Optimization
+  
   const debounce = (func, wait) => {
     let timeout;
     return function executedFunction(...args) {
@@ -567,7 +568,6 @@
       try {
         if (!user_data.default_quality || user_data.default_quality === "off")
           return;
-        return;
 
         const video = selectorCache.getVideo();
         if (!video) return;
@@ -638,33 +638,6 @@
     observerManager.addObserver("speed_preset", observer);
   }
 
-  function init_remove_remix_duet() {
-    if (user_data.hide_remix_duet !== "on") return;
-
-    const hideRemixDuet = () => {
-      const selectors = [
-        'button[aria-label*="Remix" i]',
-        'button[aria-label*="Duet" i]',
-        ".reel-player-header-remix-button",
-        ".reel-player-header-duet-button",
-      ];
-
-      selectors.forEach((selector) => {
-        try {
-          $$$(selector).forEach((el) => {
-            if (el && el.style.display !== "none") {
-              el.style.display = "none";
-            }
-          });
-        } catch (e) {}
-      });
-    };
-
-    const debouncedHideRemixDuet = debounce(hideRemixDuet, 500);
-    const observer = new MutationObserver(debouncedHideRemixDuet);
-    observer.observe($("body"), { childList: true, subtree: true });
-    observerManager.addObserver("remix_duet", observer);
-  }
 
   function init_restore_red_progress_bar() {
     if (user_data.restore_red_progress_bar !== "on") return;
@@ -881,7 +854,6 @@
       }
 
       function runDeferredInit() {
-        init_remove_remix_duet();
         init_restore_red_progress_bar();
         init_search_thumbnail_small();
         init_restore_related_sidebar_layout();
@@ -1188,7 +1160,7 @@
           let result = await responseClone.text();
           let origin_result = result;
           if (name === 'subscribe' || name === 'unsubscribe') {
-            let match_list = result.match(/channelId":\\"(.*?)"/);
+            let match_list = result.match(/channelId":"(.*?)"/);
             const match_channel_id = match_list && match_list.length > 1 ? match_list[1] : '';
             let channel_infos = user_data.channel_infos;
             if (match_channel_id) {
@@ -1599,6 +1571,8 @@
 
     init_sponsorblock();
     init_duplicate_song_prevention();
+    init_quality_preset();
+    init_speed_preset();
 
     apply_hide_buttons_css();
     init_restore_related_sidebar_layout();
@@ -2441,7 +2415,6 @@
                   "",
                 )}.adSlotRenderer$exist`,
               );
-            // youtuber merchandise shelf ad (synced from upstream)
             !mobile_web && type === "init" && player_bottom_rules.push(`/.merchandiseShelfRenderer$exist`);
             video_item_rules.push(
               `${video_sub_path.replace(/\.[^\.]+$/, ".adSlotRenderer$exist")}`,
@@ -3708,20 +3681,6 @@
           ],
         },
         {
-          id: "hide_remix_duet",
-          title: "Hide Remix/Duet Buttons",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
           id: "disable_saturated_hover",
           title: "Disable Saturated Hover",
           items: [
@@ -3738,21 +3697,6 @@
         {
           id: "disable_play_on_hover",
           title: "Disable Play on Hover",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "old_player_ui",
-          title: "Old Player UI",
-          requires_reload: true,
           items: [
             {
               tag: "btn_lable_open",
@@ -3946,15 +3890,52 @@
     unsafeWindow.document.addEventListener("click", remove_popup_hander);
     closeButton.addEventListener("click", remove_popup_hander);
 
-    make_popup_draggable(popup, header);
+    make_popup_draggable(popup, header, "pos_2333");
 
     return;
   }
 
-  function make_popup_draggable(popup, handle) {
+  function make_popup_draggable(popup, handle, posKey) {
     let isDown = false;
     let offsetX = 0;
     let offsetY = 0;
+
+    if (posKey) {
+      const saved = user_data.popup_positions?.[posKey];
+      if (saved) {
+        popup.style.transform = "none";
+        popup.style.top = saved.top;
+        popup.style.left = saved.left;
+      }
+    }
+
+    const cleanup = () => {
+      unsafeWindow.document.removeEventListener("mousemove", onMouseMove);
+      unsafeWindow.document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    const onMouseMove = (e) => {
+      if (!unsafeWindow.document.contains(popup)) { cleanup(); return; }
+      if (!isDown) return;
+      const x = e.clientX - offsetX;
+      const y = e.clientY - offsetY;
+      popup.style.left = x + "px";
+      popup.style.top = y + "px";
+    };
+
+    const onMouseUp = () => {
+      if (!unsafeWindow.document.contains(popup)) { cleanup(); return; }
+      if (!isDown) return;
+      isDown = false;
+      if (posKey) {
+        if (!user_data.popup_positions) user_data.popup_positions = {};
+        user_data.popup_positions[posKey] = {
+          top: popup.style.top,
+          left: popup.style.left,
+        };
+        user_data_api.set();
+      }
+    };
 
     handle.addEventListener("mousedown", (e) => {
       if (e.button !== 0) return;
@@ -3971,17 +3952,8 @@
       e.preventDefault();
     });
 
-    unsafeWindow.document.addEventListener("mousemove", (e) => {
-      if (!isDown) return;
-      const x = e.clientX - offsetX;
-      const y = e.clientY - offsetY;
-      popup.style.left = x + "px";
-      popup.style.top = y + "px";
-    });
-
-    unsafeWindow.document.addEventListener("mouseup", () => {
-      isDown = false;
-    });
+    unsafeWindow.document.addEventListener("mousemove", onMouseMove);
+    unsafeWindow.document.addEventListener("mouseup", onMouseUp);
   }
 
   function handle_recommend_radio(input_obj) {
@@ -3995,14 +3967,6 @@
     }
 
     config_api.config_init(user_data.language);
-
-    // Settings that require a full page reload to take effect
-    const reload_required_ids = new Set(["old_player_ui"]);
-    if (reload_required_ids.has(setting_id)) {
-      if (confirm("This setting requires a page reload to take effect. Reload now?")) {
-        unsafeWindow.location.reload();
-      }
-    }
   }
 
   function init_disable_saturated_hover() {
@@ -4141,9 +4105,6 @@
         }
       });
     };
-
-    // Check periodically for popups
-    setInterval(removeInterruptionsPopup, 500);
 
     try {
       const observer = new MutationObserver((mutations) => {
@@ -5532,7 +5493,6 @@
           disable_play_on_hover: "off",
           default_quality: "hd1080",
           default_speed: "1",
-          hide_remix_duet: "on",
           restore_related_sidebar_layout: "on",
           language: "en",
           channel_infos: {
@@ -5566,6 +5526,15 @@
           restore_red_progress_bar: "on",
           search_thumbnail_small: "on",
           dark_mode: "auto",
+          popup_positions: {},
+          sb_categories: {
+            sponsor: "on",
+            intro: "on",
+            outro: "on",
+            selfpromo: "on",
+            interaction: "on",
+            music_offtopic: "on",
+          },
           login: false,
         };
         let diff = false;
@@ -5679,6 +5648,31 @@
           } else if (key !== "dark_mode" && tmp_user_data[key] === undefined) {
             tmp_user_data[key] = "off";
             diff = true;
+          }
+        }
+
+        if (!tmp_user_data.popup_positions) {
+          tmp_user_data.popup_positions = {};
+          diff = true;
+        }
+
+        if (!tmp_user_data.sb_categories) {
+          tmp_user_data.sb_categories = {
+            sponsor: "on",
+            intro: "on",
+            outro: "on",
+            selfpromo: "on",
+            interaction: "on",
+            music_offtopic: "on",
+          };
+          diff = true;
+        } else {
+          const defaults = ["sponsor", "intro", "outro", "selfpromo", "interaction", "music_offtopic"];
+          for (const cat of defaults) {
+            if (tmp_user_data.sb_categories[cat] === undefined) {
+              tmp_user_data.sb_categories[cat] = "on";
+              diff = true;
+            }
           }
         }
 
@@ -6678,20 +6672,33 @@
     sb_log("Rendered", segments.length, "SB progress bar markers");
   }
 
+  function sb_getActiveCategories() {
+    const cats = user_data.sb_categories || {};
+    return SB_SKIP_CATEGORIES.filter((c) => cats[c] !== "off");
+  }
+
   function sb_fetchSegments(videoId, callback) {
     if (!videoId) {
       callback([]);
       return;
     }
 
-    if (sb_segmentCache.has(videoId)) {
-      callback(sb_segmentCache.get(videoId));
+    const activeCategories = sb_getActiveCategories();
+    if (activeCategories.length === 0) {
+      callback([]);
+      return;
+    }
+
+    const cacheKey = videoId + "|" + activeCategories.join(",");
+
+    if (sb_segmentCache.has(cacheKey)) {
+      callback(sb_segmentCache.get(cacheKey));
       return;
     }
 
     const url =
       `${SB_API}?videoID=${encodeURIComponent(videoId)}` +
-      `&categories=${encodeURIComponent(JSON.stringify(SB_SKIP_CATEGORIES))}`;
+      `&categories=${encodeURIComponent(JSON.stringify(activeCategories))}`;
 
     GM_xmlhttpRequest({
       method: "GET",
@@ -6721,7 +6728,7 @@
             }
           }
 
-          sb_segmentCache.set(videoId, merged);
+          sb_segmentCache.set(cacheKey, merged);
           sb_log("Loaded segments for", videoId, merged);
           callback(merged);
         } catch (e) {
@@ -6838,6 +6845,11 @@
       return;
     }
 
+    if (unsafeWindow.__yt_sb_initialized) {
+      return;
+    }
+    unsafeWindow.__yt_sb_initialized = true;
+
     function handleNavigation() {
       if (user_data.sponsorblock === "off") return;
 
@@ -6875,10 +6887,6 @@
 
     handleNavigation();
 
-    unsafeWindow.setInterval(() => {
-      handleNavigation();
-    }, 3000);
-
     sb_log("SponsorBlock navigation listeners attached");
   }
 
@@ -6902,7 +6910,6 @@
     const playHistory = [];
     const maxHistoryLength = 50;
 
-    // Debounce: track pending check and last processed song to avoid multiple timeouts
     let pendingCheck = null;
     let lastProcessedTitle = null;
 
@@ -7267,21 +7274,6 @@
       );
     }
 
-    if (user_data.hide_microphone_icon === "on") {
-      rules.push(
-        'button[aria-label*="Search with your voice" i] { display: none !important; }',
-      );
-      rules.push(
-        'button[aria-label*="Voice search" i] { display: none !important; }',
-      );
-      rules.push(
-        '.ytd-topbar-logo-button-renderer button[aria-label*="mic" i] { display: none !important; }',
-      );
-      rules.push(
-        "ytm-topbar-search-input-renderer .search-microphone { display: none !important; }",
-      );
-    }
-
     if (user_data.hide_paid_promotion === "on") {
       rules.push(
         ".ytp-paid-content-overlay { display: none !important; }",
@@ -7608,6 +7600,7 @@
       row("hb_microphone", "Hide microphone icon"),
       row("hb_restore_red_progress_bar", "Restore red progress bar"),
       row("hb_paid_promotion", "Hide paid promotion overlay"),
+      row("hb_old_player_ui", "Old Player UI (reload required)"),
     ];
 
     const rows = [...actionRows, ...otherRows];
@@ -7648,7 +7641,8 @@
     sectionHeader.append(caret, sectionTitle);
 
     const sectionBody = unsafeWindow.document.createElement("div");
-    sectionBody.className = "yt-hb-section-body";
+    sectionBody.className = "yt-hb-section-body collapsed";
+    caret.style.transform = "rotate(-90deg)";
 
     for (const { div } of actionRows) {
       sectionBody.appendChild(div);
@@ -7661,6 +7655,90 @@
 
     buttonsSection.append(sectionHeader, sectionBody);
     body.append(buttonsSection);
+
+    // SponsorBlock categories
+    const SB_CATEGORY_LABELS = {
+      sponsor:       "Sponsor",
+      intro:         "Intro / Intermission",
+      outro:         "Outro / Credits",
+      selfpromo:     "Self-promotion",
+      interaction:   "Interaction reminder",
+      music_offtopic:"Music: non-music section",
+    };
+    const SB_CATEGORY_DOTS = {
+      sponsor:       "#00d400",
+      intro:         "#00ffff",
+      outro:         "#0202ed",
+      selfpromo:     "#ffff00",
+      interaction:   "#cc00ff",
+      music_offtopic:"#ff9900",
+    };
+
+    const sbSection = unsafeWindow.document.createElement("div");
+    sbSection.className = "yt-hb-section";
+
+    const sbSectionHeader = unsafeWindow.document.createElement("div");
+    sbSectionHeader.className = "yt-hb-section-header";
+    const sbCaret = unsafeWindow.document.createElement("span");
+    sbCaret.className = "yt-hb-caret";
+    sbCaret.textContent = "▾";
+    const sbSectionTitle = unsafeWindow.document.createElement("span");
+    sbSectionTitle.textContent = "SponsorBlock categories";
+    sbSectionHeader.append(sbCaret, sbSectionTitle);
+
+    const sbSectionBody = unsafeWindow.document.createElement("div");
+    sbSectionBody.className = "yt-hb-section-body collapsed";
+    sbCaret.style.transform = "rotate(-90deg)";
+
+    sbSectionHeader.addEventListener("click", () => {
+      const collapsed = sbSectionBody.classList.toggle("collapsed");
+      sbCaret.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0deg)";
+    });
+
+    const sbCheckboxes = {};
+    for (const [catId, catLabel] of Object.entries(SB_CATEGORY_LABELS)) {
+      const rowDiv = unsafeWindow.document.createElement("div");
+      rowDiv.className = "yt-hb-row";
+
+      const input = unsafeWindow.document.createElement("input");
+      input.type = "checkbox";
+      input.id = "sb_cat_" + catId;
+      input.checked = (user_data.sb_categories?.[catId] ?? "on") === "on";
+
+      const label = unsafeWindow.document.createElement("label");
+      label.htmlFor = input.id;
+
+      // colored dot
+      const dot = unsafeWindow.document.createElement("span");
+      dot.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${SB_CATEGORY_DOTS[catId]};margin-right:5px;flex-shrink:0;`;
+
+      label.append(dot, catLabel);
+      rowDiv.append(input, label);
+      sbSectionBody.appendChild(rowDiv);
+      sbCheckboxes[catId] = input;
+
+      input.addEventListener("change", () => {
+        if (!user_data.sb_categories) user_data.sb_categories = {};
+        user_data.sb_categories[catId] = input.checked ? "on" : "off";
+        user_data_api.set();
+        sb_segmentCache.clear();
+      });
+    }
+
+    sbSection.append(sbSectionHeader, sbSectionBody);
+    body.appendChild(sbSection);
+
+    // Disable SB categories section if SponsorBlock is off
+    const sbEnabled = user_data.sponsorblock === "on";
+    if (!sbEnabled) {
+      sbSectionHeader.style.opacity = "0.45";
+      sbSectionHeader.style.pointerEvents = "none";
+      sbSectionHeader.title = "Enable SponsorBlock first to configure categories";
+      Object.values(sbCheckboxes).forEach((inp) => {
+        inp.disabled = true;
+        inp.parentElement.style.opacity = "0.45";
+      });
+    }
 
     for (const { div } of otherRows) {
       body.appendChild(div);
@@ -7686,6 +7764,7 @@
       ["hb_microphone", "hide_microphone_icon"],
       ["hb_restore_red_progress_bar", "restore_red_progress_bar"],
       ["hb_paid_promotion", "hide_paid_promotion"],
+      ["hb_old_player_ui", "old_player_ui"],
     ];
 
     const checkboxById = {};
@@ -7757,6 +7836,11 @@
         user_data[key] = input.checked ? "on" : "off";
         user_data_api.set();
         apply_hide_buttons_css();
+        if (key === "old_player_ui") {
+          if (confirm("Old Player UI requires a page reload to take effect. Reload now?")) {
+            unsafeWindow.location.reload();
+          }
+        }
       });
     }
 
@@ -7779,6 +7863,7 @@
       popup.remove();
     }
     closeBtn.addEventListener("click", close);
-    make_popup_draggable(popup, header);
+    make_popup_draggable(popup, header, "pos_2666");
+
   }
 })();
