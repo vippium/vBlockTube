@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
-// @version      1.8.1
+// @version      1.8.2
 // @description  Blocks YouTube ads and provides enhanced features for a better viewing experience.
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -303,7 +303,7 @@
           #xxx_popup button,
           #yt-hide-buttons-popup button,
           #yt-error-close,
-          #yt-error-copy,
+          #yt-vbt-settings-btn,
           .popup button {
             background-color: #3498db !important;
             color: white !important;
@@ -312,7 +312,7 @@
           #xxx_popup button:hover,
           #yt-hide-buttons-popup button:hover,
           #yt-error-close:hover,
-          #yt-error-copy:hover,
+          #yt-vbt-settings-btn:hover,
           .popup button:hover {
             background-color: #2980b9 !important;
           }
@@ -350,6 +350,36 @@
           #xxx_popup h1,
           #xxx_popup .item-group {
             color: #e0e0e0 !important;
+          }
+
+          /* Settings backup sub-popup dark mode */
+          #yt-vbt-backup-popup {
+            background-color: #1e1e1e !important;
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+          }
+
+          #yt-vbt-backup-header {
+            background-color: #2d2d2d !important;
+            color: #e0e0e0 !important;
+          }
+
+          #yt-vbt-backup-body {
+            background-color: #1e1e1e !important;
+            color: #e0e0e0 !important;
+          }
+
+          #yt-vbt-backup-body button {
+            background-color: #3498db !important;
+            color: white !important;
+          }
+
+          #yt-vbt-backup-body button:hover {
+            background-color: #2980b9 !important;
+          }
+
+          #yt-vbt-backup-note {
+            color: #aaa !important;
           }
 
           /* Watch Page Tweaks (2666) panel dark mode */
@@ -1995,7 +2025,6 @@
           music_ad_flag: "ad-free",
           upcoming: "UPCOMING",
           init: "Initialize",
-          ctoc: "Copied to clipboard",
           runing_normally: "running normally",
           err_msg: "error message",
           success: "Success",
@@ -2892,10 +2921,6 @@
     return null;
   }
 
-  function copyToClipboard(text) {
-    GM_setClipboard(text, "text");
-  }
-
   function check_native(name, fun) {
     const fun_str = fun.toString();
     if (browser_info.name !== "Firefox") {
@@ -3172,7 +3197,7 @@
     cursor:move;
     user-select:none;
     padding:4px 8px;
-    padding-right:60px;
+    padding-right:32px;
     background-color:#3498db;
     color:#ffffff;
     border-radius:4px 4px 0 0;
@@ -3181,7 +3206,7 @@
     position:relative;
   }
 
-  #yt-error-close,#yt-error-copy{
+  #yt-error-close,#yt-vbt-settings-btn{
     position:absolute;
     top:50%;
     transform:translateY(-50%);
@@ -3193,7 +3218,7 @@
     width:20px;
     height:20px;
     border-radius:3px;
-    font-size:16px;
+    font-size:14px;
     font-weight:bold;
     line-height:1;
     display:flex;
@@ -3202,16 +3227,17 @@
     transition:background-color 0.2s ease;
   }
 
-  #yt-error-copy{
+  #yt-vbt-settings-btn{
     right:32px;
+    font-size:16px;
   }
 
-  #yt-error-copy:hover{
-    background-color:rgba(46,204,113,0.9);
+  #yt-vbt-settings-btn:hover{
+    background-color:rgba(52,152,219,0.9);
   }
 
-  #yt-error-copy:active{
-    background-color:#27ae60;
+  #yt-vbt-settings-btn:active{
+    background-color:#2980b9;
   }
 
   #yt-error-close{
@@ -3234,6 +3260,99 @@
     font-size:12px;
     color:#000;
   }
+
+  /* Settings backup sub-popup */
+  #yt-vbt-backup-popup{
+    z-index:1000000000;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    padding:0;
+    background-color:#ffffff;
+    border:1px solid #3498db;
+    border-radius:5px;
+    box-shadow:0 0 15px rgba(0,0,0,0.4);
+    width:280px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  #yt-vbt-backup-header{
+    cursor:move;
+    user-select:none;
+    padding:6px 10px;
+    padding-right:32px;
+    background-color:#3498db;
+    color:#ffffff;
+    border-radius:4px 4px 0 0;
+    font-weight:bold;
+    font-size:13px;
+    position:relative;
+  }
+
+  #yt-vbt-backup-close{
+    position:absolute;
+    top:50%;
+    right:8px;
+    transform:translateY(-50%);
+    cursor:pointer;
+    background-color:transparent;
+    color:#ffffff;
+    border:none;
+    padding:0;
+    width:20px;
+    height:20px;
+    border-radius:3px;
+    font-size:16px;
+    font-weight:bold;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background-color 0.2s ease;
+  }
+
+  #yt-vbt-backup-close:hover{
+    background-color:rgba(231,76,60,0.9);
+  }
+
+  #yt-vbt-backup-body{
+    padding:14px 14px 16px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .yt-vbt-backup-btn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:600;
+    width:100%;
+    background-color:#3498db;
+    color:#ffffff;
+    transition:background-color 0.2s ease;
+  }
+
+  .yt-vbt-backup-btn:hover{
+    background-color:#2980b9;
+  }
+
+  .yt-vbt-backup-btn:active{
+    background-color:#2471a3;
+  }
+
+  #yt-vbt-backup-note{
+    font-size:11px;
+    color:#888;
+    text-align:center;
+    margin-top:2px;
+  }
   `;
     if (!unsafeWindow.document.getElementById("yt-error-style")) {
       const style = unsafeWindow.document.createElement("style");
@@ -3252,15 +3371,15 @@
     header.id = "yt-error-header";
     header.textContent = "Information (message)";
 
-    const copyBtn = unsafeWindow.document.createElement("button");
-    copyBtn.id = "yt-error-copy";
-    copyBtn.innerHTML = "📋";
-    copyBtn.title = "Copy to clipboard";
-    header.appendChild(copyBtn);
+    const settingsBtn = unsafeWindow.document.createElement("button");
+    settingsBtn.id = "yt-vbt-settings-btn";
+    settingsBtn.innerHTML = "⚙";
+    settingsBtn.title = "Export / Import settings";
+    header.appendChild(settingsBtn);
 
     const closeBtn = unsafeWindow.document.createElement("button");
     closeBtn.id = "yt-error-close";
-    closeBtn.innerHTML = "×";
+    closeBtn.innerHTML = "x";
     closeBtn.title = "Close";
     header.appendChild(closeBtn);
 
@@ -3273,13 +3392,106 @@
 
     function close() {
       popup.remove();
+      const bp = unsafeWindow.document.getElementById("yt-vbt-backup-popup");
+      if (bp) bp.remove();
     }
 
     closeBtn.addEventListener("click", close);
-    copyBtn.addEventListener("click", () => {
-      copyToClipboard(msg);
-      close();
-      alert("Copy Successful !(copy success)");
+
+    settingsBtn.addEventListener("click", () => {
+      // Toggle: close if already open
+      const existing = unsafeWindow.document.getElementById("yt-vbt-backup-popup");
+      if (existing) { existing.remove(); return; }
+
+      const bp = unsafeWindow.document.createElement("div");
+      bp.id = "yt-vbt-backup-popup";
+
+      const bh = unsafeWindow.document.createElement("div");
+      bh.id = "yt-vbt-backup-header";
+      bh.textContent = "Settings Backup";
+
+      const bc = unsafeWindow.document.createElement("button");
+      bc.id = "yt-vbt-backup-close";
+      bc.innerHTML = "x";
+      bc.title = "Close";
+      bh.appendChild(bc);
+
+      const bb = unsafeWindow.document.createElement("div");
+      bb.id = "yt-vbt-backup-body";
+
+      const exportBtn = unsafeWindow.document.createElement("button");
+      exportBtn.className = "yt-vbt-backup-btn";
+      exportBtn.innerHTML = "⬇ Export settings";
+      exportBtn.addEventListener("click", () => {
+        try {
+          const exportData = JSON.parse(JSON.stringify(user_data));
+          delete exportData.shorts_list;
+          delete exportData.channel_infos;
+          delete exportData.login;
+          const blob = new Blob(
+            [JSON.stringify(exportData, null, 2)],
+            { type: "application/json" }
+          );
+          const url = URL.createObjectURL(blob);
+          const a = unsafeWindow.document.createElement("a");
+          a.href = url;
+          a.download = "vBlockTube-settings.vbt";
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          alert("Export failed: " + e.message);
+        }
+      });
+
+      const importBtn = unsafeWindow.document.createElement("button");
+      importBtn.className = "yt-vbt-backup-btn";
+      importBtn.innerHTML = "⬆ Import Settings";
+      importBtn.addEventListener("click", () => {
+        const fileInput = unsafeWindow.document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = ".vbt";
+        fileInput.style.display = "none";
+        unsafeWindow.document.body.appendChild(fileInput);
+        fileInput.addEventListener("change", () => {
+          const file = fileInput.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const imported = JSON.parse(e.target.result);
+              if (typeof imported !== "object" || imported === null) {
+                throw new Error("Invalid settings file.");
+              }
+              const preserved = {
+                shorts_list: user_data.shorts_list,
+                channel_infos: user_data.channel_infos,
+                login: user_data.login,
+                language: user_data.language,
+              };
+              Object.assign(user_data, imported, preserved);
+              user_data_api.set();
+              alert("Settings imported successfully. The page will now reload.");
+              unsafeWindow.location.reload();
+            } catch (err) {
+              alert("Import failed: " + err.message);
+            } finally {
+              fileInput.remove();
+            }
+          };
+          reader.readAsText(file);
+        });
+        fileInput.click();
+      });
+
+      const note = unsafeWindow.document.createElement("div");
+      note.id = "yt-vbt-backup-note";
+
+      bb.append(exportBtn, importBtn, note);
+      bp.append(bh, bb);
+      unsafeWindow.document.body.appendChild(bp);
+
+      bc.addEventListener("click", () => bp.remove());
+      make_popup_draggable(bp, bh);
     });
 
     make_popup_draggable(popup, header);
@@ -3958,9 +4170,10 @@
 
   function init_disable_saturated_hover() {
     const styleId = "no-saturated-hover-style";
+
     const removeStyle = () => {
-      const existing = unsafeWindow.document.getElementById(styleId);
-      if (existing) existing.remove();
+      const el = unsafeWindow.document.getElementById(styleId);
+      if (el) el.remove();
     };
 
     if (user_data.disable_saturated_hover !== "on") {
@@ -3968,36 +4181,155 @@
       return;
     }
 
-    const css = `
-  .yt-spec-touch-feedback-shape__hover-effect,
-  .yt-spec-touch-feedback-shape__stroke,
-  .yt-spec-touch-feedback-shape__fill {
-    display: none !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
+    const detectDark = () => {
+      const html = unsafeWindow.document.documentElement;
+      if (html.hasAttribute("dark") || html.classList.contains("dark-theme")) return true;
+      if (html.hasAttribute("light") || html.classList.contains("light-theme")) return false;
+      try {
+        const bg = (getComputedStyle(html).getPropertyValue("--yt-spec-base-background") || "").trim();
+        if (bg.startsWith("rgb")) {
+          const nums = bg.match(/\d+/g);
+          if (nums && nums.length >= 3) {
+            return ((+nums[0] + +nums[1] + +nums[2]) / 3) < 60;
+          }
+        }
+      } catch (e) {}
+      return false;
+    };
 
-  ytd-rich-item-renderer.ytd-rich-item-renderer-highlight {
-    background: transparent !important;
-    box-shadow: none !important;
-    --yt-spec-outline: transparent !important;
-  }
+    const buildCss = (d) => (`
+html {
+  --ytc-base-background:${d ? "#0f0f0f" : "#fff"};
+  --ytc-additive-background:${d ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"};
+  --ytc-text-primary:${d ? "#f1f1f1" : "#0f0f0f"};
+  --ytc-text-secondary:${d ? "#aaa" : "#606060"};
+  --yt-spec-base-background:var(--yt-spec-base-background,var(--ytc-base-background));
+  --yt-spec-additive-background:var(--yt-spec-additive-background,var(--ytc-additive-background));
+  --yt-spec-text-primary:var(--yt-spec-text-primary,var(--ytc-text-primary));
+  --yt-spec-text-secondary:var(--yt-spec-text-secondary,var(--ytc-text-secondary));
+  --yt-active-playlist-panel-background-color:var(--yt-spec-additive-background);
+  --yt-lightsource-primary-title-color:var(--ytc-text-primary);
+  --yt-lightsource-secondary-title-color:var(--ytc-text-secondary);
+  --iron-icon-fill-color:var(--yt-lightsource-primary-title-color);
+}
 
-  .yt-core-attributed-string--highlight-text-decorator {
-    background-color: transparent !important;
-    filter: none !important;
-    opacity: 1 !important;
-  }
-  `;
+.yt-spec-touch-feedback-shape__hover-effect,
+.yt-spec-touch-feedback-shape__stroke,
+.yt-spec-touch-feedback-shape__fill {
+  display:none !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
 
-    let styleEl = unsafeWindow.document.getElementById(styleId);
-    if (!styleEl) {
-      styleEl = unsafeWindow.document.createElement("style");
-      styleEl.id = styleId;
-      unsafeWindow.document.head.appendChild(styleEl);
+ytd-rich-item-renderer.ytd-rich-item-renderer-highlight {
+  background:transparent !important;
+  box-shadow:none !important;
+  --yt-spec-outline:transparent !important;
+}
+
+ytd-rich-grid-renderer #video-title,
+.yt-lockup-metadata-view-model__title,
+.yt-lockup-metadata-view-model__title a {
+  color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
+}
+
+.yt-lockup-metadata-view-model__metadata,
+.yt-lockup-metadata-view-model__metadata span,
+#metadata-line span,
+.yt-content-metadata-view-model__metadata-text,
+.yt-content-metadata-view-model__metadata-text span,
+.yt-content-metadata-view-model__delimiter {
+  color:var(--yt-spec-text-secondary,var(--ytc-text-secondary)) !important;
+}
+
+ytd-watch-metadata .yt-core-attributed-string--link-inherit-color:not(:has(a)),
+ytd-watch-metadata #description,
+ytd-video-secondary-info-renderer #description,
+ytd-watch-info-text,
+#metadata.ytd-watch-info-text,
+#metadata-line.ytd-video-primary-info-renderer span,
+#snippet-text,
+#snippet-text *,
+#attributed-snippet-text,
+#attributed-snippet-text * {
+  color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
+}
+
+#snippet-text :not(a):hover,
+#attributed-snippet-text :not(a):hover,
+ytd-watch-info-text :not(a):hover {
+  color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
+  filter:none !important;
+  opacity:1 !important;
+}
+
+.yt-core-attributed-string--highlight-text-decorator>a.yt-core-attributed-string__link--call-to-action-color,
+.yt-core-attributed-string--link-inherit-color .yt-core-attributed-string--highlight-text-decorator>a.yt-core-attributed-string__link--call-to-action-color {
+  color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
+}
+
+ytd-watch-metadata :not(.yt-core-attributed-string--highlight-text-decorator)>.yt-core-attributed-string__link--call-to-action-color,
+#snippet-text :not(.yt-core-attributed-string--highlight-text-decorator)>.yt-core-attributed-string__link--call-to-action-color,
+#attributed-snippet-text :not(.yt-core-attributed-string--highlight-text-decorator)>.yt-core-attributed-string__link--call-to-action-color {
+  color:var(--yt-spec-call-to-action,#3ea6ff) !important;
+}
+
+ytd-watch-metadata #owner .yt-core-attributed-string__link--call-to-action-color {
+  color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
+}
+
+ytd-watch-metadata,.ytd-watch-metadata {
+  --yt-saturated-base-background:var(--ytc-base-background);
+  --yt-saturated-raised-background:var(--yt-spec-additive-background,var(--ytc-additive-background));
+  --yt-saturated-additive-background:var(--yt-spec-additive-background,var(--ytc-additive-background));
+  --yt-saturated-text-primary:var(--yt-spec-text-primary,var(--ytc-text-primary));
+  --yt-saturated-text-secondary:var(--yt-spec-text-secondary,var(--ytc-text-secondary));
+  --yt-saturated-overlay-background:var(--yt-spec-additive-background,var(--ytc-additive-background));
+  --yt-spec-overlay-background:var(--yt-spec-additive-background,var(--ytc-additive-background));
+  --yt-spec-static-overlay-background-light:var(--yt-spec-additive-background,var(--ytc-additive-background));
+  --yt-active-playlist-panel-background-color:var(--yt-spec-additive-background);
+  --yt-lightsource-primary-title-color:var(--ytc-text-primary);
+  --yt-lightsource-secondary-title-color:var(--ytc-text-secondary);
+  --iron-icon-fill-color:var(--yt-lightsource-primary-title-color);
+}
+
+.yt-core-attributed-string--highlight-text-decorator {
+  background-color:var(--yt-spec-static-overlay-background-light,PLACEHOLDER_COLOR) !important;
+  border-radius:8px !important;
+  padding-bottom:1px !important;
+}
+
+ytd-masthead[is-watch-page][dark]:not([theater]):not([fullscreen]) #background.ytd-masthead,
+ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
+#background.ytd-masthead {
+  opacity:1 !important;
+  background:var(--yt-spec-base-background,var(--ytc-base-background)) !important;
+}
+`).trim().replace("PLACEHOLDER_COLOR", d ? "rgba(255,255,255,0.102)" : "rgba(0,0,0,0.051)");
+
+    const CSS_CACHE = { dark: buildCss(true), light: buildCss(false) };
+
+    const apply = () => {
+      const isDark = detectDark();
+      let styleEl = unsafeWindow.document.getElementById(styleId);
+      if (!styleEl) {
+        styleEl = unsafeWindow.document.createElement("style");
+        styleEl.id = styleId;
+        (unsafeWindow.document.head || unsafeWindow.document.documentElement).appendChild(styleEl);
+      }
+      const newCss = isDark ? CSS_CACHE.dark : CSS_CACHE.light;
+      if (styleEl.textContent !== newCss) styleEl.textContent = newCss;
+    };
+
+    apply();
+
+    if (!unsafeWindow.__yt_saturated_hover_init) {
+      unsafeWindow.__yt_saturated_hover_init = true;
+      unsafeWindow.addEventListener("yt-navigate-finish", apply, { passive: true });
+      unsafeWindow.addEventListener("yt-dark-mode-toggled", apply, { passive: true });
     }
-    styleEl.textContent = css;
   }
+
 
   function init_disable_play_on_hover() {
     const styleId = "disable-play-on-hover-style";
