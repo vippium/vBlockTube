@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
-// @version      1.8.2
+// @version      1.8.1
 // @description  Blocks YouTube ads and provides enhanced features for a better viewing experience.
 // @author       vippium
 // @match        https://www.youtube.com/*
