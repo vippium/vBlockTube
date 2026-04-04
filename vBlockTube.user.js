@@ -7794,6 +7794,8 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       { text: "720p", value: "hd720" },
       { text: "480p", value: "large" },
       { text: "360p", value: "medium" },
+      { text: "240p", value: "small" },
+      { text: "144p", value: "tiny" },
     ]);
 
     const speedRow = selectRow("sel_speed", "Default speed", [
