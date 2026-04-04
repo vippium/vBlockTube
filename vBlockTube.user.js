@@ -850,6 +850,7 @@
   }
 
   init_old_player_ui();
+  init_disable_saturated_hover();
 
   init();
   function init() {
