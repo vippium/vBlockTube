@@ -70,8 +70,6 @@
 
   let element_monitor_observer;
 
-  let real_language = user_data.language;
-
   let is_account_init;
 
   let fake_fetch;
@@ -1766,7 +1764,7 @@
           channel_id,
           (name, oldValue, newValue, remote) => {
             if (!remote || this.cur_channel_id !== name) return;
-            newValue.language = user_data.language;
+            newValue.language = "en";
             user_data = newValue;
             config_api.config_init();
             const popup_node =
@@ -1835,172 +1833,6 @@
   function get_config_api() {
     return {
       flag_infos: {
-        "zh-CN": {
-          sponsored: "赞助商广告",
-          free_movie: "免费（含广告）",
-          live: "直播",
-          movie_channel: "电影与电视",
-          free_primetime_movie: "免费黄金档电影",
-          Playables: "试玩 / 游戏中心",
-          short_buy_super_thanks: "购买 Super Thanks",
-          think_video: "你觉得这个视频如何？|此推荐内容怎么样？",
-          try: "试用",
-          recommend_popular: "热门",
-          featured: "精选",
-          category_live: "直播",
-          category_game: "游戏",
-          category_news: "新闻",
-          btn_recommend_movie: "电影推荐",
-          btn_recommend_shorts: "Shorts 推荐",
-          btn_recommend_liveroom: "直播推荐",
-          btn_recommend_popular: "热门推荐",
-          btn_recommend_game: "游戏中心推荐",
-          btn_save: "保存",
-          goodselect: "精选",
-          music_ad_flag: "无广告",
-          upcoming: "即将开始",
-          init: "初始化",
-          ctoc: "已复制到剪贴板",
-          runing_normally: "运行正常",
-          err_msg: "错误信息",
-          success: "成功",
-          failed: "失败",
-          tips: "你可以将错误信息或截图发送给脚本开发者",
-          exists_error: "检测到错误",
-          inject: "注入",
-          btn_lable_open: "开启",
-          btn_lable_close: "关闭",
-          btn_lable_subscribed: "仅订阅",
-          recommend_subscribed_lable_tips: "仅显示已订阅的推荐",
-          title_add_shorts_upload_date: "在 Shorts 显示上传时间",
-          title_shorts_change_author_name: "将 Shorts 作者名替换为频道名",
-          config_info: "配置信息",
-          page_info: "页面信息",
-          rule_info: "规则信息",
-          del_config_confirm_tips: "你确定要删除所有配置信息吗？",
-          btn_shorts_auto_scroll_title: "自动滚动",
-          bt_shorts_disable_loop_play_title: "禁用循环播放",
-          btn_shorts_dbclick_like_title: "双击视频点赞",
-          btn_shorts_add_video_progress_title: "添加视频进度",
-          shorts_recommend_split_tag: "Shorts 配置",
-          btn_sponsorblock_title: "SponsorBlock 跳过赞助片段",
-          btn_sponsorblock_tips:
-            "使用 SponsorBlock 接口自动跳过视频中的赞助内容",
-          btn_duplicate_song_prevention_title: "防止重复歌曲",
-          btn_duplicate_song_prevention_tips:
-            "防止同一首歌曲或同一艺术家连续播放",
-        },
-        "zh-TW": {
-          sponsored: "贊助商廣告",
-          free_movie: "免費（含廣告）",
-          live: "直播",
-          movie_channel: "電影與電視節目",
-          free_primetime_movie: "免費黃金時段電影",
-          Playables: "遊戲角落",
-          short_buy_super_thanks: "購買 Super Thanks",
-          think_video: "你對這部影片有什麼看法？|此推薦內容如何？",
-          try: "試用",
-          recommend_popular: "發燒影片",
-          featured: "精選內容",
-          category_live: "直播",
-          category_game: "遊戲",
-          category_news: "新聞",
-          btn_recommend_movie: "電影推薦",
-          btn_recommend_shorts: "Shorts 推薦",
-          btn_recommend_liveroom: "直播推薦",
-          btn_recommend_popular: "熱門推薦",
-          btn_recommend_game: "遊戲角落推薦",
-          btn_save: "保存",
-          goodselect: "精選內容",
-          music_ad_flag: "零廣告",
-          upcoming: "即將開始",
-          init: "初始化",
-          ctoc: "已複製到剪貼板",
-          runing_normally: "運行正常",
-          err_msg: "錯誤訊息",
-          success: "成功",
-          failed: "失敗",
-          tips: "你可以將錯誤訊息或截圖發送給腳本開發者",
-          exists_error: "存在錯誤訊息（請多次刷新以確認是否為相同錯誤）",
-          inject: "注入",
-          btn_lable_open: "開啟",
-          btn_lable_close: "關閉",
-          btn_lable_subscribed: "僅訂閱",
-          recommend_subscribed_lable_tips: "只顯示已訂閱的推薦",
-          title_add_shorts_upload_date: "Shorts 添加更新時間",
-          title_shorts_change_author_name: "Shorts 使用者名稱改為頻道名稱",
-          config_info: "設定資訊",
-          page_info: "頁面資訊",
-          rule_info: "規則資訊",
-          del_config_confirm_tips: "你確定要刪除所有設定資訊嗎？",
-          btn_shorts_auto_scroll_title: "自動捲動",
-          bt_shorts_disable_loop_play_title: "禁止循環播放",
-          btn_shorts_dbclick_like_title: "雙擊影片按讚",
-          btn_shorts_add_video_progress_title: "添加影片進度",
-          shorts_recommend_split_tag: "Shorts 設定",
-          btn_sponsorblock_title: "SponsorBlock 跳過贊助片段",
-          btn_sponsorblock_tips:
-            "使用 SponsorBlock API 自動跳過影片中的贊助內容",
-          btn_duplicate_song_prevention_title: "防止重複歌曲",
-          btn_duplicate_song_prevention_tips:
-            "防止同一首歌曲或同一藝術家連續播放",
-        },
-        "zh-HK": {
-          sponsored: "贊助廣告",
-          free_movie: "免費（有廣告）",
-          live: "直播",
-          movie_channel: "電影與電視節目",
-          free_primetime_movie: "免費黃金時段電影",
-          Playables: "遊戲角落",
-          short_buy_super_thanks: "購買 Super Thanks",
-          free_primetime_movie: "免費黃金時段電影",
-          think_video: "你對此影片有何意見？|此推薦內容如何？",
-          try: "試用",
-          recommend_popular: "熱爆影片",
-          featured: "精選",
-          category_live: "直播",
-          category_game: "遊戲",
-          category_news: "新聞",
-          btn_recommend_movie: "電影推薦",
-          btn_recommend_shorts: "Shorts 推薦",
-          btn_recommend_liveroom: "直播推薦",
-          btn_recommend_popular: "熱門推薦",
-          btn_recommend_game: "遊戲角落推薦",
-          btn_save: "保存",
-          goodselect: "精選",
-          music_ad_flag: "零廣告音樂",
-          upcoming: "即將發佈",
-          init: "初始化",
-          ctoc: "已複製到剪貼板",
-          runing_normally: "運行正常",
-          err_msg: "錯誤訊息",
-          success: "成功",
-          failed: "失敗",
-          tips: "你可以將錯誤訊息或截圖發送給腳本開發者",
-          exists_error: "存在錯誤訊息（請多次刷新以確認是否為相同錯誤）",
-          inject: "注入",
-          btn_lable_open: "開啓",
-          btn_lable_close: "關閉",
-          btn_lable_subscribed: "僅訂閱",
-          recommend_subscribed_lable_tips: "只顯示已訂閱的推薦",
-          title_add_shorts_upload_date: "Shorts 添加更新時間",
-          title_shorts_change_author_name: "Shorts 使用者名稱改為頻道名稱",
-          config_info: "設定資訊",
-          page_info: "頁面資訊",
-          rule_info: "規則資訊",
-          del_config_confirm_tips: "你確定要刪除所有設定資訊嗎？",
-          btn_shorts_auto_scroll_title: "自動捲動",
-          bt_shorts_disable_loop_play_title: "禁止循環播放",
-          btn_shorts_dbclick_like_title: "雙擊影片按讚",
-          btn_shorts_add_video_progress_title: "添加影片進度",
-          shorts_recommend_split_tag: "Shorts 設定",
-          btn_sponsorblock_title: "SponsorBlock 跳過贊助內容",
-          btn_sponsorblock_tips:
-            "使用 SponsorBlock API 自動略過影片中的贊助片段",
-          btn_duplicate_song_prevention_title: "防止重複歌曲",
-          btn_duplicate_song_prevention_tips:
-            "防止同一首歌曲或同一藝術家連續播放",
-        },
         en: {
           sponsored: "Sponsored Ads",
           free_movie: "Free (with ads)",
@@ -2026,6 +1858,7 @@
           music_ad_flag: "ad-free",
           upcoming: "UPCOMING",
           init: "Initialize",
+          ctoc: "Copied to clipboard",
           runing_normally: "running normally",
           err_msg: "error message",
           success: "Success",
@@ -2071,30 +1904,10 @@
       ],
       default_language: "en",
       config_init: function (tmp_language = null) {
-        if (!tmp_language) {
-          tmp_language = unsafeWindow["ytcfg"].msgs
-            ? unsafeWindow["ytcfg"].msgs.__lang__
-            : unsafeWindow["ytcfg"].data
-              ? unsafeWindow["ytcfg"].data.HL
-              : undefined;
-          !tmp_language &&
-            (tmp_language =
-              unsafeWindow["yt"] &&
-              unsafeWindow["yt"].config_ &&
-              unsafeWindow["yt"].config_.HL);
-          if (!tmp_language) {
-            log("Language acquisition error", unsafeWindow, -1);
-          }
-        }
-        if (!["en", "zh-CN", "zh-TW", "zh-HK"].includes(tmp_language)) {
-          real_language = tmp_language;
-          tmp_language = this.default_language;
-        }
-        if (tmp_language !== user_data.language) {
-          user_data.language = tmp_language;
-          user_data_api.set();
-        }
-        flag_info = this.flag_infos[user_data.language];
+        // Always use English
+        user_data.language = "en";
+        user_data_api.set();
+        flag_info = this.flag_infos["en"];
         movie_channel_info = {
           guideEntryRenderer: {
             navigationEndpoint: {
@@ -2644,6 +2457,8 @@
           "yt_shorts",
           "yt_music_home",
           "yt_music_watch",
+          "yt_watch_playlist",
+          "other",
         ].includes(page_type)
       ) {
         clearInterval(interval_id);
@@ -2749,7 +2564,6 @@
                       "..." +
                       str_channel_id.slice(-5)
                 }`;
-                tips += `\nreal_language：${real_language}`;
                 if (error_messages.length !== 0) {
                   tips += `\n\n${flag_info.exists_error}\n-----------${
                     flag_info.err_msg
@@ -3964,6 +3778,8 @@
       "mobile_yt_search",
       "mobile_yt_watch_searching",
       "mobile_yt_home_searching",
+      "yt_watch_playlist",
+      "other",
     ].includes(page_type) && (win_config = home_watch_config);
     ["yt_shorts"].includes(page_type) && (win_config = shorts_config);
 
@@ -7394,79 +7210,122 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
         return;
       }
 
-      const selectors = [
-        "ytd-reel-shelf-renderer",
-        'a[title="Shorts"]',
-        "ytm-shorts-lockup-view-model-v2",
-        "ytm-shorts-lockup-view-model",
-        "yt-chip-cloud-chip-renderer",
-      ];
+      // Hide reel shelf renderers (Shorts shelves on home/subscriptions)
+      document.querySelectorAll("ytd-reel-shelf-renderer").forEach((element) => {
+        hideElement(element);
+      });
 
-      document.querySelectorAll(selectors.join(",")).forEach((element) => {
-        if (element.matches("yt-chip-cloud-chip-renderer")) {
-          const chipText = element.querySelector(".ytChipShapeChip");
-          if (chipText?.textContent.trim() === "Shorts") {
-            hideElement(element);
-          }
-        } else {
+      // Hide Shorts sidebar entry in the guide menu
+      document.querySelectorAll('ytd-guide-entry-renderer').forEach((entry) => {
+        const link = entry.querySelector('a[title="Shorts"]');
+        if (link) {
+          hideElement(entry);
+        }
+      });
+
+      // Hide Shorts in compact sidebar (mini guide)
+      document.querySelectorAll('ytd-mini-guide-entry-renderer').forEach((entry) => {
+        const link = entry.querySelector('a[title="Shorts"]');
+        if (link) {
+          hideElement(entry);
+        }
+      });
+
+      // Hide Shorts chips in filter bar
+      document.querySelectorAll("yt-chip-cloud-chip-renderer").forEach((element) => {
+        const chipText = element.querySelector(".ytChipShapeChip");
+        if (chipText?.textContent.trim() === "Shorts") {
           hideElement(element);
         }
       });
 
-      document
-        .querySelectorAll('a[href^="/shorts/"]:not([data-processed])')
-        .forEach((link) => {
-          const videoRenderer = link.closest("ytd-video-renderer");
-          if (videoRenderer) {
-            hideElement(videoRenderer);
-          }
-          link.setAttribute("data-processed", "true");
-        });
+      // Hide individual Shorts items in search/home/subscriptions
+      document.querySelectorAll('a[href^="/shorts/"]:not([data-shorts-processed])').forEach((link) => {
+        link.setAttribute("data-shorts-processed", "true");
 
-      document
-        .querySelectorAll(
-          ".ytGridShelfViewModelGridShelfItem:not([data-processed])",
-        )
-        .forEach((item) => {
-          if (
-            item.querySelector(
-              'ytm-shorts-lockup-view-model-v2, a[href^="/shorts/"]',
-            )
-          ) {
-            hideElement(item);
-          }
-          item.setAttribute("data-processed", "true");
-        });
+        // Hide video renderer (for search results)
+        const videoRenderer = link.closest("ytd-video-renderer");
+        if (videoRenderer) {
+          hideElement(videoRenderer);
+        }
 
-      document
-        .querySelectorAll("grid-shelf-view-model:not([data-processed])")
-        .forEach((shelf) => {
-          const hasShorts =
-            shelf.querySelector("ytm-shorts-lockup-view-model-v2") ||
-            shelf
-              .querySelector(
-                '.shelf-header-layout-wiz__title span[role="text"]',
-              )
-              ?.textContent?.includes("Shorts");
-          if (hasShorts) {
-            hideElement(shelf);
-          }
-          shelf.setAttribute("data-processed", "true");
-        });
+        // Hide grid video renderer (for grid view)
+        const gridRenderer = link.closest("ytd-grid-video-renderer");
+        if (gridRenderer) {
+          hideElement(gridRenderer);
+        }
 
-      document
-        .querySelectorAll("span:not([data-processed])")
-        .forEach((span) => {
-          if (span.textContent.includes("Shorts")) {
-            const richSection = span.closest(
-              "#content.ytd-rich-section-renderer",
-            );
-            if (richSection) {
-              hideElement(richSection);
-            }
-          }
-          span.setAttribute("data-processed", "true");
-        });
+        // Hide rich item renderer (for home/subscriptions)
+        const richItem = link.closest("ytd-rich-item-renderer");
+        if (richItem) {
+          hideElement(richItem);
+        }
+
+        // Hide compact video renderer
+        const compactRenderer = link.closest("ytd-compact-video-renderer");
+        if (compactRenderer) {
+          hideElement(compactRenderer);
+        }
+      });
+
+      // Hide mobile Shorts lockup view models
+      document.querySelectorAll("ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model").forEach((element) => {
+        hideElement(element);
+      });
+
+      // Hide grid shelf items containing Shorts
+      document.querySelectorAll(".ytGridShelfViewModelGridShelfItem:not([data-shorts-processed])").forEach((item) => {
+        if (item.querySelector('ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model, a[href^="/shorts/"]')) {
+          hideElement(item);
+        }
+        item.setAttribute("data-shorts-processed", "true");
+      });
+
+      // Hide grid-shelf-view-model containing Shorts
+      document.querySelectorAll("grid-shelf-view-model:not([data-shorts-processed])").forEach((shelf) => {
+        shelf.setAttribute("data-shorts-processed", "true");
+        const hasShorts =
+          shelf.querySelector("ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model") ||
+          shelf.querySelector('.shelf-header-layout-wiz__title span[role="text"]')?.textContent?.includes("Shorts");
+        if (hasShorts) {
+          hideElement(shelf);
+        }
+      });
+
+      // Hide Shorts tab on channel pages and subscriptions using tab-title attribute
+      document.querySelectorAll('yt-tab-shape[tab-title="Shorts"]').forEach((tab) => {
+        hideElement(tab);
+      });
+
+      // Fallback for Shorts tabs without tab-title attribute
+      document.querySelectorAll('yt-tab-shape:not([data-shorts-processed])').forEach((tab) => {
+        tab.setAttribute("data-shorts-processed", "true");
+        const tabText = tab.querySelector('.yt-tab-shape__tab');
+        if (tabText?.textContent?.trim() === "Shorts") {
+          hideElement(tab);
+        }
+      });
+
+      // Hide Shorts sections with "Shorts" title in rich sections
+      document.querySelectorAll("ytd-rich-section-renderer:not([data-shorts-processed])").forEach((section) => {
+        section.setAttribute("data-shorts-processed", "true");
+        const titleSpan = section.querySelector(
+          ".yt-shelf-header-layout__title .yt-core-attributed-string, .yt-shelf-header-layout__title-row .yt-core-attributed-string"
+        );
+        const text = titleSpan?.textContent?.trim();
+        if (text === "Shorts") {
+          hideElement(section);
+        }
+      });
+
+      // Hide ytd-rich-shelf-renderer with Shorts content
+      document.querySelectorAll("ytd-rich-shelf-renderer:not([data-shorts-processed])").forEach((shelf) => {
+        shelf.setAttribute("data-shorts-processed", "true");
+        const title = shelf.querySelector("#title-container h2, .ytd-rich-shelf-renderer #title");
+        if (title?.textContent?.trim() === "Shorts") {
+          hideElement(shelf);
+        }
+      });
 
       hide_shorts_sections_if_disabled();
     }
