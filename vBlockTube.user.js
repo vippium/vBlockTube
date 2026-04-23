@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
-// @version      1.8.2
+// @version      1.8.3
 // @description  Blocks YouTube ads and provides enhanced features for a better viewing experience.
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -84,7 +84,6 @@
 
   const $ = unsafeWindow.document.querySelector.bind(unsafeWindow.document);
   const $$ = unsafeWindow.document.querySelectorAll.bind(unsafeWindow.document);
-
 
   const debounce = (func, wait) => {
     let timeout;
@@ -573,7 +572,9 @@
           display: none !important;
         }
       `;
-      (unsafeWindow.document.head || unsafeWindow.document.documentElement).appendChild(style);
+      (
+        unsafeWindow.document.head || unsafeWindow.document.documentElement
+      ).appendChild(style);
     }
 
     injectOldPlayerCSS();
@@ -668,7 +669,6 @@
     observer.observe($("body"), { childList: true, subtree: true });
     observerManager.addObserver("speed_preset", observer);
   }
-
 
   function init_restore_red_progress_bar() {
     if (user_data.restore_red_progress_bar !== "on") return;
@@ -1182,277 +1182,343 @@
         unsafeWindow.document.createElement.toString =
           origin_createElement.toString.bind(origin_createElement);
       },
-            request() {
-                async function deal_response(name, response, rule) {
-                    if (!rule) return response;
-                    let is_deal = false;
-                    const responseClone = response.clone();
-                    let result = await responseClone.text();
-                    let origin_result = result;
-                    if (name === 'subscribe' || name === 'unsubscribe') {
-                        let match_list = result.match(/channelId":\"(.*?)"/);
-                        const match_channel_id = match_list && match_list.length > 1 ? match_list[1] : '';
-                        let channel_infos = user_data.channel_infos;
-                        if (match_channel_id) {
-                            if (name === 'unsubscribe') {
-                                let index = channel_infos.ids.indexOf(match_channel_id);
-                                if (index > -1) {
-                                    channel_infos.ids.splice(index, 1);
-                                    channel_infos.names.splice(index, 1);
-                                }
-                            } else {
-                                channel_infos.ids.push(match_channel_id);
-                                channel_infos.names.push('');
-                            }
-                            user_data.channel_infos = channel_infos;
-                            user_data_api.set();
-                            log(name, match_channel_id, 0);
-                        }
-                        is_deal = true;
-                    }
-                    if (name === 'playlist') {
-                        let obj;
-                        try {
-                            obj = JSON.parse(result);
-                            data_process.obj_process(obj.playerResponse, config_api.common_ytInitialPlayerResponse_rule, false);
-                            data_process.obj_process(obj.response, config_api.get_rules('yt_watch', 'init'), false);
-                            result = JSON.stringify(obj);
-                        } catch (error) {
-                            log('playlist 解析失败', error, -1);
-                            result = origin_result;
-                        }
-                        is_deal = true;
-                    }
-                    if (!is_deal) {
-                        let start_time = Date.now();
-                        result = data_process.text_process(result, rule, 'insert', false);
-                        log(name + ' 时间：', Date.now() - start_time, 'spend_time');
-                    }
-                    if (!result) {
-                        result = origin_result;
-                        debugger;
-                    }
-                    return new Response(result, response);
+      request() {
+        async function deal_response(name, response, rule) {
+          if (!rule) return response;
+          let is_deal = false;
+          const responseClone = response.clone();
+          let result = await responseClone.text();
+          let origin_result = result;
+          if (name === "subscribe" || name === "unsubscribe") {
+            let match_list = result.match(/channelId":\"(.*?)"/);
+            const match_channel_id =
+              match_list && match_list.length > 1 ? match_list[1] : "";
+            let channel_infos = user_data.channel_infos;
+            if (match_channel_id) {
+              if (name === "unsubscribe") {
+                let index = channel_infos.ids.indexOf(match_channel_id);
+                if (index > -1) {
+                  channel_infos.ids.splice(index, 1);
+                  channel_infos.names.splice(index, 1);
                 }
-                const origin_fetch = unsafeWindow.fetch;
-                if (!check_native('fetch', origin_fetch)) {
-                    log('fetch have been modified', -1);
-                }
-                fake_fetch = function () {
-                    const fetch_ = async function (uri, options) {
-                        async function fetch_request(response) {
-                            let url = response.url;
-                            inject_info.fetch = true;
-                            let request_body;
-                            try {
-                                request_body = uri.body_ ? JSON.parse(uri.body_) : null;
-                            } catch (error) {
-                                request_body = null;
-                            }
-                            if (url.includes('youtubei/v1/next')) {
-                                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_watch' : 'yt_watch', request_body?.videoId ? "init" : 'next');
-                                return await deal_response('next', response, rule);
-                            }
-                            if (url.includes('youtubei/v1/player')) {
-                                return await deal_response('player', response, config_api.common_ytInitialPlayerResponse_rule);
-                            }
-                            if (url.includes('youtubei/v1/reel/reel_watch_sequence')) {
-                                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_shorts' : 'yt_shorts').ytInitialReelWatchSequenceResponse_rule;
-                                return await deal_response('reel_watch_sequence', response, rule);
-                            }
-                            if (url.includes('youtubei/v1/reel/reel_item_watch')) {
-                                // shorts 内容
-                                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_shorts' : 'yt_shorts').ytInitialData_rule;
-                                return await deal_response('reel_item_watch', response, rule);
-                            }
-                            if (url.includes('youtubei/v1/browse?prettyPrint=false')) {
-                                let browse_id = request_body?.browseId;
-                                let rule;
-                                if (href.includes('https://music.youtube.com/')) {
-                                    rule = config_api.get_rules('yt_music', 'browse').ytInitialData_rule;
-                                }
-                                // 忽略音乐主页 影视主页
-                                if (!rule && (['yt_home', 'mobile_yt_home'].includes(page_type) || browse_id === 'FEwhat_to_watch')) {
-                                    if (!browse_id) {
-                                        let node, category_text, node_list, node_index;
-                                        if (mobile_web) {
-                                            node = $('#filter-chip-bar > div > ytm-chip-cloud-chip-renderer.selected');
-                                            node_list = $$('#filter-chip-bar > div > ytm-chip-cloud-chip-renderer');
-                                            node_index = Array.from(node_list).indexOf(node);
-                                            if (node_index !== 1) return response;
-                                        } else {
-                                            node = $('#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer.iron-selected');
-                                            node_list = $$('#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer');
-                                            node_index = Array.from(node_list).indexOf(node);
-                                            if (node_index !== 0) return response;
-                                        }
-
-                                    }
-                                    rule = config_api.get_rules(mobile_web ? 'mobile_yt_home' : 'yt_home', request_body?.browseId ? 'init' : 'browse').ytInitialData_rule;
-                                }
-
-                                return await deal_response('browse', response, rule);
-                            }
-                            if (url.startsWith('https://www.youtube.com/playlist?list=')) {
-                                return await deal_response('playlist', response, []);
-                            }
-                            // if (url.includes('https://m.youtube.com/youtubei/v1/guide')) {
-                            //     return response;
-                            // }
-                            if (url.includes('/youtubei/v1/search')) {
-                                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_search' : 'yt_search').ytInitialData_rule;
-                                return await deal_response('search', response, rule);
-                            }
-                            if (url.includes('/unsubscribe?prettyPrint=false')) {
-                                return await deal_response('unsubscribe', response, []);
-                            }
-                            if (url.includes('/subscribe?prettyPrint=false')) {
-                                return await deal_response('subscribe', response, []);
-                            }
-                            if (url.includes('/v1/get_watch')) {
-                                const originalBody = response.body;
-                                const reader = originalBody.getReader();
-                                const stream = new ReadableStream({
-                                    async start(controller) {
-                                        const chunks = [];
-                                        try {
-                                            // Read all the data first
-                                            while (true) {
-                                                const { done, value } = await reader.read();
-                                                if (done) break;
-                                                chunks.push(value);
-                                            }
-                                            // Merge all the chunks
-                                            const allChunks = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
-                                            let position = 0;
-                                            for (const chunk of chunks) {
-                                                allChunks.set(chunk, position);
-                                                position += chunk.length;
-                                            }
-                                            // Convert to text
-                                            let text = new TextDecoder().decode(allChunks);
-                                            const save = text;
-                                            try {
-                                                let json = JSON.parse(text);
-                                                const rules = [
-                                                    "abs:[0].playerResponse.adBreakHeartbeatParams=- $exist",
-                                                    "abs:[0].playerResponse.adSlots=- $exist",
-                                                    "abs:[0].playerResponse.adPlacements=- $exist",
-                                                    "adSlotRenderer.=- $exist",
-                                                    "merchandiseShelfRenderer.=- $exist"
-                                                ];
-                                                const traverse_all = true;
-                                                data_process.obj_process(json, rules, { traverse_all });
-                                                text = JSON.stringify(json);
-                                            } catch (error) {
-                                                log('fetch response text error', error, -1);
-                                                text = save;
-                                            }
-                                            // Convert the modified text back to a Uint8Array and return it.
-                                            const modifiedData = new TextEncoder().encode(text);
-                                            controller.enqueue(modifiedData);
-                                            controller.close();
-                                        } catch (error) {
-                                            log('Stream error: ' + error, -1);
-                                            controller.error(error);
-                                        }
-                                    }
-                                });
-                                Object.defineProperty(response, 'body', {
-                                    get() {
-                                        return stream;
-                                    }
-                                });
-                            }
-
-                            return response;
-                        }
-                        return origin_fetch(uri, options).then(fetch_request);
-                    };
-                    return fetch_;
-                }();
-                unsafeWindow.fetch = fake_fetch;
-                unsafeWindow.fetch.toString = origin_fetch.toString.bind(origin_fetch);
-                const origin_Request = unsafeWindow.Request;
-                if (!check_native('Request', origin_Request)) {
-                    log('Request have been modified', -1);
-                }
-                unsafeWindow.Request = class extends unsafeWindow.Request {
-                    constructor(input, options = void 0) {
-                        super(input, options);
-                        this.url_ = input;
-                        if (options && 'body' in options) {
-                            setTimeout(async () => {
-                                const ds = new DecompressionStream('gzip');
-                                const stream = new Blob([options.body]).stream().pipeThrough(ds);
-                                const requestBody = await new Response(stream).text();
-                                this.body_ = requestBody;
-                            }, 0);
-                        }
-
-                    }
-                };
-
-                unsafeWindow.XMLHttpRequest = class extends unsafeWindow.XMLHttpRequest {
-                    open(method, url, ...opts) {
-                        inject_info.xhr = true;
-                        if (['mobile_yt_watch'].includes(page_type) && url.includes('m.youtube.com/watch?v')) {
-                            log('xhr watch 返回空', 0);
-                            return null;
-                        }
-                        if (['mobile_yt_home'].includes(page_type) && url.includes('m.youtube.com/?pbj')) {
-                            log('xhr home 返回空', 0);
-                            return null;
-                        }
-                        this.url_ = url;
-                        return super.open(method, url, ...opts);
-                    }
-                    send(body) {
-                        this.body_ = body;
-                        super.send(body);
-                    }
-                    get xhrResponseValue() {
-                        const xhr = this;
-                        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                            let result = super.response;
-                            const url = xhr.responseURL;
-                            const result_type = typeof result;
-                            try {
-                                if (url.includes('youtubei/v1/player')) {
-                                    // music_watch shorts
-                                    if (result_type !== 'string') {
-                                        log(`XHR ${url} 返回值不是字符串！`, 0);
-                                        return result;
-                                    };
-                                    result = data_process.text_process(result, config_api.common_ytInitialPlayerResponse_rule, 'insert', false);
-                                    return result;
-                                }
-                                if (url.includes('youtube.com/playlist')) {
-                                    debugger;
-                                    let obj;
-                                    obj = JSON.parse(result);
-                                    log(`出现 ${url} ！`, 0);
-                                    data_process.obj_process(obj[2].playerResponse, ytInitialPlayerResponse_rule, false);
-                                    data_process.obj_process(obj[3].response, ytInitialData_rule, false);
-                                    tmp_debugger_value = obj;
-                                    result = JSON.stringify(obj);
-                                    return result;
-                                }
-                            } catch (error) {
-                                log(`XHR ${url} 解析失败！`, error, -1);
-                            }
-                        }
-                        return super.response;
-                    }
-                    get responseText() {
-                        return this.xhrResponseValue;
-                    }
-                    get response() {
-                        return this.xhrResponseValue;
-                    }
-                };
-
+              } else {
+                channel_infos.ids.push(match_channel_id);
+                channel_infos.names.push("");
+              }
+              user_data.channel_infos = channel_infos;
+              user_data_api.set();
+              log(name, match_channel_id, 0);
             }
+            is_deal = true;
+          }
+          if (name === "playlist") {
+            let obj;
+            try {
+              obj = JSON.parse(result);
+              data_process.obj_process(
+                obj.playerResponse,
+                config_api.common_ytInitialPlayerResponse_rule,
+                false,
+              );
+              data_process.obj_process(
+                obj.response,
+                config_api.get_rules("yt_watch", "init"),
+                false,
+              );
+              result = JSON.stringify(obj);
+            } catch (error) {
+              log("playlist 解析失败", error, -1);
+              result = origin_result;
+            }
+            is_deal = true;
+          }
+          if (!is_deal) {
+            let start_time = Date.now();
+            result = data_process.text_process(result, rule, "insert", false);
+            log(name + " 时间：", Date.now() - start_time, "spend_time");
+          }
+          if (!result) {
+            result = origin_result;
+            debugger;
+          }
+          return new Response(result, response);
+        }
+        const origin_fetch = unsafeWindow.fetch;
+        if (!check_native("fetch", origin_fetch)) {
+          log("fetch have been modified", -1);
+        }
+        fake_fetch = (function () {
+          const fetch_ = async function (uri, options) {
+            async function fetch_request(response) {
+              let url = response.url;
+              inject_info.fetch = true;
+              let request_body;
+              try {
+                request_body = uri.body_ ? JSON.parse(uri.body_) : null;
+              } catch (error) {
+                request_body = null;
+              }
+              if (url.includes("youtubei/v1/next")) {
+                const rule = config_api.get_rules(
+                  mobile_web ? "mobile_yt_watch" : "yt_watch",
+                  request_body?.videoId ? "init" : "next",
+                );
+                return await deal_response("next", response, rule);
+              }
+              if (url.includes("youtubei/v1/player")) {
+                return await deal_response(
+                  "player",
+                  response,
+                  config_api.common_ytInitialPlayerResponse_rule,
+                );
+              }
+              if (url.includes("youtubei/v1/reel/reel_watch_sequence")) {
+                const rule = config_api.get_rules(
+                  mobile_web ? "mobile_yt_shorts" : "yt_shorts",
+                ).ytInitialReelWatchSequenceResponse_rule;
+                return await deal_response(
+                  "reel_watch_sequence",
+                  response,
+                  rule,
+                );
+              }
+              if (url.includes("youtubei/v1/reel/reel_item_watch")) {
+                // shorts 内容
+                const rule = config_api.get_rules(
+                  mobile_web ? "mobile_yt_shorts" : "yt_shorts",
+                ).ytInitialData_rule;
+                return await deal_response("reel_item_watch", response, rule);
+              }
+              if (url.includes("youtubei/v1/browse?prettyPrint=false")) {
+                let browse_id = request_body?.browseId;
+                let rule;
+                if (href.includes("https://music.youtube.com/")) {
+                  rule = config_api.get_rules(
+                    "yt_music",
+                    "browse",
+                  ).ytInitialData_rule;
+                }
+                // 忽略音乐主页 影视主页
+                if (
+                  !rule &&
+                  (["yt_home", "mobile_yt_home"].includes(page_type) ||
+                    browse_id === "FEwhat_to_watch")
+                ) {
+                  if (!browse_id) {
+                    let node, category_text, node_list, node_index;
+                    if (mobile_web) {
+                      node = $(
+                        "#filter-chip-bar > div > ytm-chip-cloud-chip-renderer.selected",
+                      );
+                      node_list = $$(
+                        "#filter-chip-bar > div > ytm-chip-cloud-chip-renderer",
+                      );
+                      node_index = Array.from(node_list).indexOf(node);
+                      if (node_index !== 1) return response;
+                    } else {
+                      node = $(
+                        "#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer.iron-selected",
+                      );
+                      node_list = $$(
+                        "#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer",
+                      );
+                      node_index = Array.from(node_list).indexOf(node);
+                      if (node_index !== 0) return response;
+                    }
+                  }
+                  rule = config_api.get_rules(
+                    mobile_web ? "mobile_yt_home" : "yt_home",
+                    request_body?.browseId ? "init" : "browse",
+                  ).ytInitialData_rule;
+                }
+
+                return await deal_response("browse", response, rule);
+              }
+              if (url.startsWith("https://www.youtube.com/playlist?list=")) {
+                return await deal_response("playlist", response, []);
+              }
+              // if (url.includes('https://m.youtube.com/youtubei/v1/guide')) {
+              //     return response;
+              // }
+              if (url.includes("/youtubei/v1/search")) {
+                const rule = config_api.get_rules(
+                  mobile_web ? "mobile_yt_search" : "yt_search",
+                ).ytInitialData_rule;
+                return await deal_response("search", response, rule);
+              }
+              if (url.includes("/unsubscribe?prettyPrint=false")) {
+                return await deal_response("unsubscribe", response, []);
+              }
+              if (url.includes("/subscribe?prettyPrint=false")) {
+                return await deal_response("subscribe", response, []);
+              }
+              if (url.includes("/v1/get_watch")) {
+                const originalBody = response.body;
+                const reader = originalBody.getReader();
+                const stream = new ReadableStream({
+                  async start(controller) {
+                    const chunks = [];
+                    try {
+                      // Read all the data first
+                      while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        chunks.push(value);
+                      }
+                      // Merge all the chunks
+                      const allChunks = new Uint8Array(
+                        chunks.reduce((acc, chunk) => acc + chunk.length, 0),
+                      );
+                      let position = 0;
+                      for (const chunk of chunks) {
+                        allChunks.set(chunk, position);
+                        position += chunk.length;
+                      }
+                      // Convert to text
+                      let text = new TextDecoder().decode(allChunks);
+                      const save = text;
+                      try {
+                        let json = JSON.parse(text);
+                        const rules = [
+                          "abs:[0].playerResponse.adBreakHeartbeatParams=- $exist",
+                          "abs:[0].playerResponse.adSlots=- $exist",
+                          "abs:[0].playerResponse.adPlacements=- $exist",
+                          "adSlotRenderer.=- $exist",
+                          "merchandiseShelfRenderer.=- $exist",
+                        ];
+                        const traverse_all = true;
+                        data_process.obj_process(json, rules, { traverse_all });
+                        text = JSON.stringify(json);
+                      } catch (error) {
+                        log("fetch response text error", error, -1);
+                        text = save;
+                      }
+                      // Convert the modified text back to a Uint8Array and return it.
+                      const modifiedData = new TextEncoder().encode(text);
+                      controller.enqueue(modifiedData);
+                      controller.close();
+                    } catch (error) {
+                      log("Stream error: " + error, -1);
+                      controller.error(error);
+                    }
+                  },
+                });
+                Object.defineProperty(response, "body", {
+                  get() {
+                    return stream;
+                  },
+                });
+              }
+
+              return response;
+            }
+            return origin_fetch(uri, options).then(fetch_request);
+          };
+          return fetch_;
+        })();
+        unsafeWindow.fetch = fake_fetch;
+        unsafeWindow.fetch.toString = origin_fetch.toString.bind(origin_fetch);
+        const origin_Request = unsafeWindow.Request;
+        if (!check_native("Request", origin_Request)) {
+          log("Request have been modified", -1);
+        }
+        unsafeWindow.Request = class extends unsafeWindow.Request {
+          constructor(input, options = void 0) {
+            super(input, options);
+            this.url_ = input;
+            if (options && "body" in options) {
+              setTimeout(async () => {
+                const ds = new DecompressionStream("gzip");
+                const stream = new Blob([options.body])
+                  .stream()
+                  .pipeThrough(ds);
+                const requestBody = await new Response(stream).text();
+                this.body_ = requestBody;
+              }, 0);
+            }
+          }
+        };
+
+        unsafeWindow.XMLHttpRequest = class extends (
+          unsafeWindow.XMLHttpRequest
+        ) {
+          open(method, url, ...opts) {
+            inject_info.xhr = true;
+            if (
+              ["mobile_yt_watch"].includes(page_type) &&
+              url.includes("m.youtube.com/watch?v")
+            ) {
+              log("xhr watch 返回空", 0);
+              return null;
+            }
+            if (
+              ["mobile_yt_home"].includes(page_type) &&
+              url.includes("m.youtube.com/?pbj")
+            ) {
+              log("xhr home 返回空", 0);
+              return null;
+            }
+            this.url_ = url;
+            return super.open(method, url, ...opts);
+          }
+          send(body) {
+            this.body_ = body;
+            super.send(body);
+          }
+          get xhrResponseValue() {
+            const xhr = this;
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+              let result = super.response;
+              const url = xhr.responseURL;
+              const result_type = typeof result;
+              try {
+                if (url.includes("youtubei/v1/player")) {
+                  // music_watch shorts
+                  if (result_type !== "string") {
+                    log(`XHR ${url} 返回值不是字符串！`, 0);
+                    return result;
+                  }
+                  result = data_process.text_process(
+                    result,
+                    config_api.common_ytInitialPlayerResponse_rule,
+                    "insert",
+                    false,
+                  );
+                  return result;
+                }
+                if (url.includes("youtube.com/playlist")) {
+                  debugger;
+                  let obj;
+                  obj = JSON.parse(result);
+                  log(`出现 ${url} ！`, 0);
+                  data_process.obj_process(
+                    obj[2].playerResponse,
+                    ytInitialPlayerResponse_rule,
+                    false,
+                  );
+                  data_process.obj_process(
+                    obj[3].response,
+                    ytInitialData_rule,
+                    false,
+                  );
+                  tmp_debugger_value = obj;
+                  result = JSON.stringify(obj);
+                  return result;
+                }
+              } catch (error) {
+                log(`XHR ${url} 解析失败！`, error, -1);
+              }
+            }
+            return super.response;
+          }
+          get responseText() {
+            return this.xhrResponseValue;
+          }
+          get response() {
+            return this.xhrResponseValue;
+          }
+        };
+      },
     };
   }
 
@@ -2246,7 +2312,9 @@
                   "",
                 )}.adSlotRenderer$exist`,
               );
-            !mobile_web && type === "init" && player_bottom_rules.push(`/.merchandiseShelfRenderer$exist`);
+            !mobile_web &&
+              type === "init" &&
+              player_bottom_rules.push(`/.merchandiseShelfRenderer$exist`);
             video_item_rules.push(
               `${video_sub_path.replace(/\.[^\.]+$/, ".adSlotRenderer$exist")}`,
             );
@@ -3216,8 +3284,13 @@
 
     settingsBtn.addEventListener("click", () => {
       // Toggle: close if already open
-      const existing = unsafeWindow.document.getElementById("yt-vbt-backup-popup");
-      if (existing) { existing.remove(); return; }
+      const existing = unsafeWindow.document.getElementById(
+        "yt-vbt-backup-popup",
+      );
+      if (existing) {
+        existing.remove();
+        return;
+      }
 
       const bp = unsafeWindow.document.createElement("div");
       bp.id = "yt-vbt-backup-popup";
@@ -3244,10 +3317,9 @@
           delete exportData.shorts_list;
           delete exportData.channel_infos;
           delete exportData.login;
-          const blob = new Blob(
-            [JSON.stringify(exportData, null, 2)],
-            { type: "application/json" }
-          );
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+            type: "application/json",
+          });
           const url = URL.createObjectURL(blob);
           const a = unsafeWindow.document.createElement("a");
           a.href = url;
@@ -3286,7 +3358,9 @@
               };
               Object.assign(user_data, imported, preserved);
               user_data_api.set();
-              alert("Settings imported successfully. The page will now reload.");
+              alert(
+                "Settings imported successfully. The page will now reload.",
+              );
               unsafeWindow.location.reload();
             } catch (err) {
               alert("Import failed: " + err.message);
@@ -3932,7 +4006,10 @@
     };
 
     const onMouseMove = (e) => {
-      if (!unsafeWindow.document.contains(popup)) { cleanup(); return; }
+      if (!unsafeWindow.document.contains(popup)) {
+        cleanup();
+        return;
+      }
       if (!isDown) return;
       const x = e.clientX - offsetX;
       const y = e.clientY - offsetY;
@@ -3941,7 +4018,10 @@
     };
 
     const onMouseUp = () => {
-      if (!unsafeWindow.document.contains(popup)) { cleanup(); return; }
+      if (!unsafeWindow.document.contains(popup)) {
+        cleanup();
+        return;
+      }
       if (!isDown) return;
       isDown = false;
       if (posKey) {
@@ -3994,6 +4074,13 @@
       if (el) el.remove();
     };
 
+    if (unsafeWindow.__yt_saturated_hover_listeners) {
+      const [navL, darkL] = unsafeWindow.__yt_saturated_hover_listeners;
+      unsafeWindow.removeEventListener("yt-navigate-finish", navL);
+      unsafeWindow.removeEventListener("yt-dark-mode-toggled", darkL);
+      unsafeWindow.__yt_saturated_hover_listeners = null;
+    }
+
     if (user_data.disable_saturated_hover !== "on") {
       removeStyle();
       return;
@@ -4001,21 +4088,67 @@
 
     const detectDark = () => {
       const html = unsafeWindow.document.documentElement;
-      if (html.hasAttribute("dark") || html.classList.contains("dark-theme")) return true;
-      if (html.hasAttribute("light") || html.classList.contains("light-theme")) return false;
+      if (html.hasAttribute("dark") || html.classList.contains("dark-theme"))
+        return true;
+      if (html.hasAttribute("light") || html.classList.contains("light-theme"))
+        return false;
       try {
-        const bg = (getComputedStyle(html).getPropertyValue("--yt-spec-base-background") || "").trim();
+        const bg = (
+          getComputedStyle(html).getPropertyValue(
+            "--yt-spec-base-background",
+          ) || ""
+        ).trim();
         if (bg.startsWith("rgb")) {
           const nums = bg.match(/\d+/g);
           if (nums && nums.length >= 3) {
-            return ((+nums[0] + +nums[1] + +nums[2]) / 3) < 60;
+            return (+nums[0] + +nums[1] + +nums[2]) / 3 < 60;
           }
         }
       } catch (e) {}
       return false;
     };
 
-    const buildCss = (d) => (`
+    const updatePlaylistPanel = () => {
+      for (const panel of unsafeWindow.document.querySelectorAll(
+        "ytd-playlist-panel-renderer",
+      )) {
+        panel.style.setProperty(
+          "--yt-active-playlist-panel-background-color",
+          "var(--yt-spec-additive-background)",
+        );
+        panel.style.setProperty(
+          "--yt-lightsource-primary-title-color",
+          "var(--ytc-text-primary)",
+        );
+        panel.style.setProperty(
+          "--yt-lightsource-secondary-title-color",
+          "var(--ytc-text-secondary)",
+        );
+        panel.style.setProperty(
+          "--iron-icon-fill-color",
+          "var(--yt-lightsource-primary-title-color)",
+        );
+      }
+    };
+
+    let retryRafId = null;
+    const retryPlaylistPanel = () => {
+      if (retryRafId) cancelAnimationFrame(retryRafId);
+      let attempts = 0;
+      const check = () => {
+        if (
+          unsafeWindow.document.querySelector("ytd-playlist-panel-renderer")
+        ) {
+          updatePlaylistPanel();
+          return;
+        }
+        if (++attempts < 60) retryRafId = requestAnimationFrame(check);
+      };
+      check();
+    };
+
+    const buildCss = (d) =>
+      `
 html {
   --ytc-base-background:${d ? "#0f0f0f" : "#fff"};
   --ytc-additive-background:${d ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"};
@@ -4025,16 +4158,20 @@ html {
   --yt-spec-additive-background:var(--yt-spec-additive-background,var(--ytc-additive-background));
   --yt-spec-text-primary:var(--yt-spec-text-primary,var(--ytc-text-primary));
   --yt-spec-text-secondary:var(--yt-spec-text-secondary,var(--ytc-text-secondary));
-  --yt-active-playlist-panel-background-color:var(--yt-spec-additive-background);
-  --yt-lightsource-primary-title-color:var(--ytc-text-primary);
-  --yt-lightsource-secondary-title-color:var(--ytc-text-secondary);
-  --iron-icon-fill-color:var(--yt-lightsource-primary-title-color);
 }
 
+yt-touch-feedback-shape,
 .yt-spec-touch-feedback-shape__hover-effect,
 .yt-spec-touch-feedback-shape__stroke,
-.yt-spec-touch-feedback-shape__fill {
+.yt-spec-touch-feedback-shape__fill,
+.ytSpecTouchFeedbackShapeHost,
+.ytSpecTouchFeedbackShapeHoverEffect,
+.ytSpecTouchFeedbackShapeStroke,
+.ytSpecTouchFeedbackShapeFill {
   display:none !important;
+  background:transparent !important;
+  background-color:transparent !important;
+  border-color:transparent !important;
   opacity:0 !important;
   pointer-events:none !important;
 }
@@ -4047,19 +4184,7 @@ ytd-rich-item-renderer.ytd-rich-item-renderer-highlight {
 
 ytd-rich-grid-renderer #video-title,
 .yt-lockup-metadata-view-model__title,
-.yt-lockup-metadata-view-model__title a {
-  color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
-}
-
-.yt-lockup-metadata-view-model__metadata,
-.yt-lockup-metadata-view-model__metadata span,
-#metadata-line span,
-.yt-content-metadata-view-model__metadata-text,
-.yt-content-metadata-view-model__metadata-text span,
-.yt-content-metadata-view-model__delimiter {
-  color:var(--yt-spec-text-secondary,var(--ytc-text-secondary)) !important;
-}
-
+.yt-lockup-metadata-view-model__title a,
 ytd-watch-metadata .yt-core-attributed-string--link-inherit-color:not(:has(a)),
 ytd-watch-metadata #description,
 ytd-video-secondary-info-renderer #description,
@@ -4069,20 +4194,30 @@ ytd-watch-info-text,
 #snippet-text,
 #snippet-text *,
 #attributed-snippet-text,
-#attributed-snippet-text * {
-  color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
-}
-
+#attributed-snippet-text *,
 #snippet-text :not(a):hover,
 #attributed-snippet-text :not(a):hover,
-ytd-watch-info-text :not(a):hover {
+ytd-watch-info-text :not(a):hover,
+.yt-core-attributed-string--highlight-text-decorator>a.yt-core-attributed-string__link--call-to-action-color,
+.yt-core-attributed-string--link-inherit-color .yt-core-attributed-string--highlight-text-decorator>a.yt-core-attributed-string__link--call-to-action-color,
+ytd-watch-metadata #owner .yt-core-attributed-string__link--call-to-action-color,
+a[href^="/watch"][style*="color"],
+a[href^="/watch"] span[style*="color"] {
   color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
-  filter:none !important;
-  opacity:1 !important;
 }
 
-.yt-core-attributed-string--highlight-text-decorator>a.yt-core-attributed-string__link--call-to-action-color,
-.yt-core-attributed-string--link-inherit-color .yt-core-attributed-string--highlight-text-decorator>a.yt-core-attributed-string__link--call-to-action-color {
+.yt-lockup-metadata-view-model__metadata,
+.yt-lockup-metadata-view-model__metadata span,
+#metadata-line span,
+.yt-content-metadata-view-model__metadata-text,
+.yt-content-metadata-view-model__metadata-text span,
+.yt-content-metadata-view-model__delimiter,
+.ytLockupMetadataViewModelMetadata,
+.ytLockupMetadataViewModelMetadata * {
+  color:var(--yt-spec-text-secondary,var(--ytc-text-secondary)) !important;
+}
+
+.ytLockupMetadataViewModelMetadata a.yt-core-attributed-string__link:hover {
   color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
 }
 
@@ -4090,10 +4225,6 @@ ytd-watch-metadata :not(.yt-core-attributed-string--highlight-text-decorator)>.y
 #snippet-text :not(.yt-core-attributed-string--highlight-text-decorator)>.yt-core-attributed-string__link--call-to-action-color,
 #attributed-snippet-text :not(.yt-core-attributed-string--highlight-text-decorator)>.yt-core-attributed-string__link--call-to-action-color {
   color:var(--yt-spec-call-to-action,#3ea6ff) !important;
-}
-
-ytd-watch-metadata #owner .yt-core-attributed-string__link--call-to-action-color {
-  color:var(--yt-spec-text-primary,var(--ytc-text-primary)) !important;
 }
 
 ytd-watch-metadata,.ytd-watch-metadata {
@@ -4123,7 +4254,12 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
   opacity:1 !important;
   background:var(--yt-spec-base-background,var(--ytc-base-background)) !important;
 }
-`).trim().replace("PLACEHOLDER_COLOR", d ? "rgba(255,255,255,0.102)" : "rgba(0,0,0,0.051)");
+`
+        .trim()
+        .replace(
+          "PLACEHOLDER_COLOR",
+          d ? "rgba(255,255,255,0.102)" : "rgba(0,0,0,0.051)",
+        );
 
     const CSS_CACHE = { dark: buildCss(true), light: buildCss(false) };
 
@@ -4133,21 +4269,28 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       if (!styleEl) {
         styleEl = unsafeWindow.document.createElement("style");
         styleEl.id = styleId;
-        (unsafeWindow.document.head || unsafeWindow.document.documentElement).appendChild(styleEl);
+        (
+          unsafeWindow.document.head || unsafeWindow.document.documentElement
+        ).appendChild(styleEl);
       }
       const newCss = isDark ? CSS_CACHE.dark : CSS_CACHE.light;
       if (styleEl.textContent !== newCss) styleEl.textContent = newCss;
+      updatePlaylistPanel();
+      retryPlaylistPanel();
     };
 
     apply();
 
-    if (!unsafeWindow.__yt_saturated_hover_init) {
-      unsafeWindow.__yt_saturated_hover_init = true;
-      unsafeWindow.addEventListener("yt-navigate-finish", apply, { passive: true });
-      unsafeWindow.addEventListener("yt-dark-mode-toggled", apply, { passive: true });
-    }
+    const navListener = () => apply();
+    const darkListener = () => apply();
+    unsafeWindow.addEventListener("yt-navigate-finish", navListener, {
+      passive: true,
+    });
+    unsafeWindow.addEventListener("yt-dark-mode-toggled", darkListener, {
+      passive: true,
+    });
+    unsafeWindow.__yt_saturated_hover_listeners = [navListener, darkListener];
   }
-
 
   function init_disable_play_on_hover() {
     const styleId = "disable-play-on-hover-style";
@@ -5804,7 +5947,14 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
           };
           diff = true;
         } else {
-          const defaults = ["sponsor", "intro", "outro", "selfpromo", "interaction", "music_offtopic"];
+          const defaults = [
+            "sponsor",
+            "intro",
+            "outro",
+            "selfpromo",
+            "interaction",
+            "music_offtopic",
+          ];
           for (const cat of defaults) {
             if (tmp_user_data.sb_categories[cat] === undefined) {
               tmp_user_data.sb_categories[cat] = "on";
@@ -7212,12 +7362,14 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       }
 
       // Hide reel shelf renderers (Shorts shelves on home/subscriptions)
-      document.querySelectorAll("ytd-reel-shelf-renderer").forEach((element) => {
-        hideElement(element);
-      });
+      document
+        .querySelectorAll("ytd-reel-shelf-renderer")
+        .forEach((element) => {
+          hideElement(element);
+        });
 
       // Hide Shorts sidebar entry in the guide menu
-      document.querySelectorAll('ytd-guide-entry-renderer').forEach((entry) => {
+      document.querySelectorAll("ytd-guide-entry-renderer").forEach((entry) => {
         const link = entry.querySelector('a[title="Shorts"]');
         if (link) {
           hideElement(entry);
@@ -7225,108 +7377,148 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       });
 
       // Hide Shorts in compact sidebar (mini guide)
-      document.querySelectorAll('ytd-mini-guide-entry-renderer').forEach((entry) => {
-        const link = entry.querySelector('a[title="Shorts"]');
-        if (link) {
-          hideElement(entry);
-        }
-      });
+      document
+        .querySelectorAll("ytd-mini-guide-entry-renderer")
+        .forEach((entry) => {
+          const link = entry.querySelector('a[title="Shorts"]');
+          if (link) {
+            hideElement(entry);
+          }
+        });
 
       // Hide Shorts chips in filter bar
-      document.querySelectorAll("yt-chip-cloud-chip-renderer").forEach((element) => {
-        const chipText = element.querySelector(".ytChipShapeChip");
-        if (chipText?.textContent.trim() === "Shorts") {
-          hideElement(element);
-        }
-      });
+      document
+        .querySelectorAll("yt-chip-cloud-chip-renderer")
+        .forEach((element) => {
+          const chipText = element.querySelector(".ytChipShapeChip");
+          if (chipText?.textContent.trim() === "Shorts") {
+            hideElement(element);
+          }
+        });
 
       // Hide individual Shorts items in search/home/subscriptions
-      document.querySelectorAll('a[href^="/shorts/"]:not([data-shorts-processed])').forEach((link) => {
-        link.setAttribute("data-shorts-processed", "true");
+      document
+        .querySelectorAll('a[href^="/shorts/"]:not([data-shorts-processed])')
+        .forEach((link) => {
+          link.setAttribute("data-shorts-processed", "true");
 
-        // Hide video renderer (for search results)
-        const videoRenderer = link.closest("ytd-video-renderer");
-        if (videoRenderer) {
-          hideElement(videoRenderer);
-        }
+          // Hide video renderer (for search results)
+          const videoRenderer = link.closest("ytd-video-renderer");
+          if (videoRenderer) {
+            hideElement(videoRenderer);
+          }
 
-        // Hide grid video renderer (for grid view)
-        const gridRenderer = link.closest("ytd-grid-video-renderer");
-        if (gridRenderer) {
-          hideElement(gridRenderer);
-        }
+          // Hide grid video renderer (for grid view)
+          const gridRenderer = link.closest("ytd-grid-video-renderer");
+          if (gridRenderer) {
+            hideElement(gridRenderer);
+          }
 
-        // Hide rich item renderer (for home/subscriptions)
-        const richItem = link.closest("ytd-rich-item-renderer");
-        if (richItem) {
-          hideElement(richItem);
-        }
+          // Hide rich item renderer (for home/subscriptions)
+          const richItem = link.closest("ytd-rich-item-renderer");
+          if (richItem) {
+            hideElement(richItem);
+          }
 
-        // Hide compact video renderer
-        const compactRenderer = link.closest("ytd-compact-video-renderer");
-        if (compactRenderer) {
-          hideElement(compactRenderer);
-        }
-      });
+          // Hide compact video renderer
+          const compactRenderer = link.closest("ytd-compact-video-renderer");
+          if (compactRenderer) {
+            hideElement(compactRenderer);
+          }
+        });
 
       // Hide mobile Shorts lockup view models
-      document.querySelectorAll("ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model").forEach((element) => {
-        hideElement(element);
-      });
+      document
+        .querySelectorAll(
+          "ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model",
+        )
+        .forEach((element) => {
+          hideElement(element);
+        });
 
       // Hide grid shelf items containing Shorts
-      document.querySelectorAll(".ytGridShelfViewModelGridShelfItem:not([data-shorts-processed])").forEach((item) => {
-        if (item.querySelector('ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model, a[href^="/shorts/"]')) {
-          hideElement(item);
-        }
-        item.setAttribute("data-shorts-processed", "true");
-      });
+      document
+        .querySelectorAll(
+          ".ytGridShelfViewModelGridShelfItem:not([data-shorts-processed])",
+        )
+        .forEach((item) => {
+          if (
+            item.querySelector(
+              'ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model, a[href^="/shorts/"]',
+            )
+          ) {
+            hideElement(item);
+          }
+          item.setAttribute("data-shorts-processed", "true");
+        });
 
       // Hide grid-shelf-view-model containing Shorts
-      document.querySelectorAll("grid-shelf-view-model:not([data-shorts-processed])").forEach((shelf) => {
-        shelf.setAttribute("data-shorts-processed", "true");
-        const hasShorts =
-          shelf.querySelector("ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model") ||
-          shelf.querySelector('.shelf-header-layout-wiz__title span[role="text"]')?.textContent?.includes("Shorts");
-        if (hasShorts) {
-          hideElement(shelf);
-        }
-      });
+      document
+        .querySelectorAll("grid-shelf-view-model:not([data-shorts-processed])")
+        .forEach((shelf) => {
+          shelf.setAttribute("data-shorts-processed", "true");
+          const hasShorts =
+            shelf.querySelector(
+              "ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model",
+            ) ||
+            shelf
+              .querySelector(
+                '.shelf-header-layout-wiz__title span[role="text"]',
+              )
+              ?.textContent?.includes("Shorts");
+          if (hasShorts) {
+            hideElement(shelf);
+          }
+        });
 
       // Hide Shorts tab on channel pages and subscriptions using tab-title attribute
-      document.querySelectorAll('yt-tab-shape[tab-title="Shorts"]').forEach((tab) => {
-        hideElement(tab);
-      });
+      document
+        .querySelectorAll('yt-tab-shape[tab-title="Shorts"]')
+        .forEach((tab) => {
+          hideElement(tab);
+        });
 
       // Fallback for Shorts tabs without tab-title attribute
-      document.querySelectorAll('yt-tab-shape:not([data-shorts-processed])').forEach((tab) => {
-        tab.setAttribute("data-shorts-processed", "true");
-        const tabText = tab.querySelector('.yt-tab-shape__tab');
-        if (tabText?.textContent?.trim() === "Shorts") {
-          hideElement(tab);
-        }
-      });
+      document
+        .querySelectorAll("yt-tab-shape:not([data-shorts-processed])")
+        .forEach((tab) => {
+          tab.setAttribute("data-shorts-processed", "true");
+          const tabText = tab.querySelector(".yt-tab-shape__tab");
+          if (tabText?.textContent?.trim() === "Shorts") {
+            hideElement(tab);
+          }
+        });
 
       // Hide Shorts sections with "Shorts" title in rich sections
-      document.querySelectorAll("ytd-rich-section-renderer:not([data-shorts-processed])").forEach((section) => {
-        section.setAttribute("data-shorts-processed", "true");
-        const titleSpan = section.querySelector(
-          ".yt-shelf-header-layout__title .yt-core-attributed-string, .yt-shelf-header-layout__title-row .yt-core-attributed-string"
-        );
-        const text = titleSpan?.textContent?.trim();
-        if (text === "Shorts") {
-          hideElement(section);
-        }
-      });
+      document
+        .querySelectorAll(
+          "ytd-rich-section-renderer:not([data-shorts-processed])",
+        )
+        .forEach((section) => {
+          section.setAttribute("data-shorts-processed", "true");
+          const titleSpan = section.querySelector(
+            ".yt-shelf-header-layout__title .yt-core-attributed-string, .yt-shelf-header-layout__title-row .yt-core-attributed-string",
+          );
+          const text = titleSpan?.textContent?.trim();
+          if (text === "Shorts") {
+            hideElement(section);
+          }
+        });
 
       // Hide ytd-rich-shelf-renderer with Shorts content
-      document.querySelectorAll("ytd-rich-shelf-renderer:not([data-shorts-processed])").forEach((shelf) => {
-        shelf.setAttribute("data-shorts-processed", "true");
-        const title = shelf.querySelector("#title-container h2, .ytd-rich-shelf-renderer #title");
-        if (title?.textContent?.trim() === "Shorts") {
-          hideElement(shelf);
-        }
-      });
+      document
+        .querySelectorAll(
+          "ytd-rich-shelf-renderer:not([data-shorts-processed])",
+        )
+        .forEach((shelf) => {
+          shelf.setAttribute("data-shorts-processed", "true");
+          const title = shelf.querySelector(
+            "#title-container h2, .ytd-rich-shelf-renderer #title",
+          );
+          if (title?.textContent?.trim() === "Shorts") {
+            hideElement(shelf);
+          }
+        });
 
       hide_shorts_sections_if_disabled();
     }
@@ -7357,7 +7549,6 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       reRun: blockShorts,
     };
   }
-
 
   /* ====== 2666 WATCH PAGE ELEMENTS HIDER PANEL ====== */
 
@@ -7456,15 +7647,11 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     }
 
     if (user_data.hide_paid_promotion === "on") {
-      rules.push(
-        ".ytp-paid-content-overlay { display: none !important; }",
-      );
+      rules.push(".ytp-paid-content-overlay { display: none !important; }");
       rules.push(
         ".ytp-paid-content-overlay-link { display: none !important; }",
       );
-      rules.push(
-        ".YtmPaidContentOverlayHost { display: none !important; }",
-      );
+      rules.push(".YtmPaidContentOverlayHost { display: none !important; }");
       rules.push(
         "ytm-paid-content-overlay-renderer { display: none !important; }",
       );
@@ -7840,20 +8027,20 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
 
     // SponsorBlock categories
     const SB_CATEGORY_LABELS = {
-      sponsor:       "Sponsor",
-      intro:         "Intro / Intermission",
-      outro:         "Outro / Credits",
-      selfpromo:     "Self-promotion",
-      interaction:   "Interaction reminder",
-      music_offtopic:"Music: non-music section",
+      sponsor: "Sponsor",
+      intro: "Intro / Intermission",
+      outro: "Outro / Credits",
+      selfpromo: "Self-promotion",
+      interaction: "Interaction reminder",
+      music_offtopic: "Music: non-music section",
     };
     const SB_CATEGORY_DOTS = {
-      sponsor:       "#00d400",
-      intro:         "#00ffff",
-      outro:         "#0202ed",
-      selfpromo:     "#ffff00",
-      interaction:   "#cc00ff",
-      music_offtopic:"#ff9900",
+      sponsor: "#00d400",
+      intro: "#00ffff",
+      outro: "#0202ed",
+      selfpromo: "#ffff00",
+      interaction: "#cc00ff",
+      music_offtopic: "#ff9900",
     };
 
     const sbSection = unsafeWindow.document.createElement("div");
@@ -7915,7 +8102,8 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     if (!sbEnabled) {
       sbSectionHeader.style.opacity = "0.45";
       sbSectionHeader.style.pointerEvents = "none";
-      sbSectionHeader.title = "Enable SponsorBlock first to configure categories";
+      sbSectionHeader.title =
+        "Enable SponsorBlock first to configure categories";
       Object.values(sbCheckboxes).forEach((inp) => {
         inp.disabled = true;
         inp.parentElement.style.opacity = "0.45";
@@ -8019,7 +8207,11 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
         user_data_api.set();
         apply_hide_buttons_css();
         if (key === "old_player_ui") {
-          if (confirm("Old Player UI requires a page reload to take effect. Reload now?")) {
+          if (
+            confirm(
+              "Old Player UI requires a page reload to take effect. Reload now?",
+            )
+          ) {
             unsafeWindow.location.reload();
           }
         }
@@ -8046,6 +8238,5 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     }
     closeBtn.addEventListener("click", close);
     make_popup_draggable(popup, header, "pos_2666");
-
   }
 })();
