@@ -85,6 +85,7 @@
   const $ = unsafeWindow.document.querySelector.bind(unsafeWindow.document);
   const $$ = unsafeWindow.document.querySelectorAll.bind(unsafeWindow.document);
 
+
   const debounce = (func, wait) => {
     let timeout;
     return function executedFunction(...args) {
@@ -572,9 +573,7 @@
           display: none !important;
         }
       `;
-      (
-        unsafeWindow.document.head || unsafeWindow.document.documentElement
-      ).appendChild(style);
+      (unsafeWindow.document.head || unsafeWindow.document.documentElement).appendChild(style);
     }
 
     injectOldPlayerCSS();
@@ -669,6 +668,7 @@
     observer.observe($("body"), { childList: true, subtree: true });
     observerManager.addObserver("speed_preset", observer);
   }
+
 
   function init_restore_red_progress_bar() {
     if (user_data.restore_red_progress_bar !== "on") return;
@@ -1182,343 +1182,281 @@
         unsafeWindow.document.createElement.toString =
           origin_createElement.toString.bind(origin_createElement);
       },
-      request() {
-        async function deal_response(name, response, rule) {
-          if (!rule) return response;
-          let is_deal = false;
-          const responseClone = response.clone();
-          let result = await responseClone.text();
-          let origin_result = result;
-          if (name === "subscribe" || name === "unsubscribe") {
-            let match_list = result.match(/channelId":\"(.*?)"/);
-            const match_channel_id =
-              match_list && match_list.length > 1 ? match_list[1] : "";
-            let channel_infos = user_data.channel_infos;
-            if (match_channel_id) {
-              if (name === "unsubscribe") {
-                let index = channel_infos.ids.indexOf(match_channel_id);
-                if (index > -1) {
-                  channel_infos.ids.splice(index, 1);
-                  channel_infos.names.splice(index, 1);
-                }
-              } else {
-                channel_infos.ids.push(match_channel_id);
-                channel_infos.names.push("");
-              }
-              user_data.channel_infos = channel_infos;
-              user_data_api.set();
-              log(name, match_channel_id, 0);
-            }
-            is_deal = true;
-          }
-          if (name === "playlist") {
-            let obj;
-            try {
-              obj = JSON.parse(result);
-              data_process.obj_process(
-                obj.playerResponse,
-                config_api.common_ytInitialPlayerResponse_rule,
-                false,
-              );
-              data_process.obj_process(
-                obj.response,
-                config_api.get_rules("yt_watch", "init"),
-                false,
-              );
-              result = JSON.stringify(obj);
-            } catch (error) {
-              log("playlist 解析失败", error, -1);
-              result = origin_result;
-            }
-            is_deal = true;
-          }
-          if (!is_deal) {
-            let start_time = Date.now();
-            result = data_process.text_process(result, rule, "insert", false);
-            log(name + " 时间：", Date.now() - start_time, "spend_time");
-          }
-          if (!result) {
-            result = origin_result;
-            debugger;
-          }
-          return new Response(result, response);
-        }
-        const origin_fetch = unsafeWindow.fetch;
-        if (!check_native("fetch", origin_fetch)) {
-          log("fetch have been modified", -1);
-        }
-        fake_fetch = (function () {
-          const fetch_ = async function (uri, options) {
-            async function fetch_request(response) {
-              let url = response.url;
-              inject_info.fetch = true;
-              let request_body;
-              try {
-                request_body = uri.body_ ? JSON.parse(uri.body_) : null;
-              } catch (error) {
-                request_body = null;
-              }
-              if (url.includes("youtubei/v1/next")) {
-                const rule = config_api.get_rules(
-                  mobile_web ? "mobile_yt_watch" : "yt_watch",
-                  request_body?.videoId ? "init" : "next",
-                );
-                return await deal_response("next", response, rule);
-              }
-              if (url.includes("youtubei/v1/player")) {
-                return await deal_response(
-                  "player",
-                  response,
-                  config_api.common_ytInitialPlayerResponse_rule,
-                );
-              }
-              if (url.includes("youtubei/v1/reel/reel_watch_sequence")) {
-                const rule = config_api.get_rules(
-                  mobile_web ? "mobile_yt_shorts" : "yt_shorts",
-                ).ytInitialReelWatchSequenceResponse_rule;
-                return await deal_response(
-                  "reel_watch_sequence",
-                  response,
-                  rule,
-                );
-              }
-              if (url.includes("youtubei/v1/reel/reel_item_watch")) {
-                // shorts 内容
-                const rule = config_api.get_rules(
-                  mobile_web ? "mobile_yt_shorts" : "yt_shorts",
-                ).ytInitialData_rule;
-                return await deal_response("reel_item_watch", response, rule);
-              }
-              if (url.includes("youtubei/v1/browse?prettyPrint=false")) {
-                let browse_id = request_body?.browseId;
-                let rule;
-                if (href.includes("https://music.youtube.com/")) {
-                  rule = config_api.get_rules(
-                    "yt_music",
-                    "browse",
-                  ).ytInitialData_rule;
-                }
-                // 忽略音乐主页 影视主页
-                if (
-                  !rule &&
-                  (["yt_home", "mobile_yt_home"].includes(page_type) ||
-                    browse_id === "FEwhat_to_watch")
-                ) {
-                  if (!browse_id) {
-                    let node, category_text, node_list, node_index;
-                    if (mobile_web) {
-                      node = $(
-                        "#filter-chip-bar > div > ytm-chip-cloud-chip-renderer.selected",
-                      );
-                      node_list = $$(
-                        "#filter-chip-bar > div > ytm-chip-cloud-chip-renderer",
-                      );
-                      node_index = Array.from(node_list).indexOf(node);
-                      if (node_index !== 1) return response;
-                    } else {
-                      node = $(
-                        "#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer.iron-selected",
-                      );
-                      node_list = $$(
-                        "#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer",
-                      );
-                      node_index = Array.from(node_list).indexOf(node);
-                      if (node_index !== 0) return response;
+            request() {
+                async function deal_response(name, response, rule) {
+                    if (!rule) return response;
+                    let is_deal = false;
+                    const responseClone = response.clone();
+                    let result = await responseClone.text();
+                    let origin_result = result;
+                    if (name === 'subscribe' || name === 'unsubscribe') {
+                        let match_list = result.match(/channelId":\"(.*?)"/);
+                        const match_channel_id = match_list && match_list.length > 1 ? match_list[1] : '';
+                        let channel_infos = user_data.channel_infos;
+                        if (match_channel_id) {
+                            if (name === 'unsubscribe') {
+                                let index = channel_infos.ids.indexOf(match_channel_id);
+                                if (index > -1) {
+                                    channel_infos.ids.splice(index, 1);
+                                    channel_infos.names.splice(index, 1);
+                                }
+                            } else {
+                                channel_infos.ids.push(match_channel_id);
+                                channel_infos.names.push('');
+                            }
+                            user_data.channel_infos = channel_infos;
+                            user_data_api.set();
+                            log(name, match_channel_id, 0);
+                        }
+                        is_deal = true;
                     }
-                  }
-                  rule = config_api.get_rules(
-                    mobile_web ? "mobile_yt_home" : "yt_home",
-                    request_body?.browseId ? "init" : "browse",
-                  ).ytInitialData_rule;
-                }
-
-                return await deal_response("browse", response, rule);
-              }
-              if (url.startsWith("https://www.youtube.com/playlist?list=")) {
-                return await deal_response("playlist", response, []);
-              }
-              // if (url.includes('https://m.youtube.com/youtubei/v1/guide')) {
-              //     return response;
-              // }
-              if (url.includes("/youtubei/v1/search")) {
-                const rule = config_api.get_rules(
-                  mobile_web ? "mobile_yt_search" : "yt_search",
-                ).ytInitialData_rule;
-                return await deal_response("search", response, rule);
-              }
-              if (url.includes("/unsubscribe?prettyPrint=false")) {
-                return await deal_response("unsubscribe", response, []);
-              }
-              if (url.includes("/subscribe?prettyPrint=false")) {
-                return await deal_response("subscribe", response, []);
-              }
-              if (url.includes("/v1/get_watch")) {
-                const originalBody = response.body;
-                const reader = originalBody.getReader();
-                const stream = new ReadableStream({
-                  async start(controller) {
-                    const chunks = [];
-                    try {
-                      // Read all the data first
-                      while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-                        chunks.push(value);
-                      }
-                      // Merge all the chunks
-                      const allChunks = new Uint8Array(
-                        chunks.reduce((acc, chunk) => acc + chunk.length, 0),
-                      );
-                      let position = 0;
-                      for (const chunk of chunks) {
-                        allChunks.set(chunk, position);
-                        position += chunk.length;
-                      }
-                      // Convert to text
-                      let text = new TextDecoder().decode(allChunks);
-                      const save = text;
-                      try {
-                        let json = JSON.parse(text);
-                        const rules = [
-                          "abs:[0].playerResponse.adBreakHeartbeatParams=- $exist",
-                          "abs:[0].playerResponse.adSlots=- $exist",
-                          "abs:[0].playerResponse.adPlacements=- $exist",
-                          "adSlotRenderer.=- $exist",
-                          "merchandiseShelfRenderer.=- $exist",
-                        ];
-                        const traverse_all = true;
-                        data_process.obj_process(json, rules, { traverse_all });
-                        text = JSON.stringify(json);
-                      } catch (error) {
-                        log("fetch response text error", error, -1);
-                        text = save;
-                      }
-                      // Convert the modified text back to a Uint8Array and return it.
-                      const modifiedData = new TextEncoder().encode(text);
-                      controller.enqueue(modifiedData);
-                      controller.close();
-                    } catch (error) {
-                      log("Stream error: " + error, -1);
-                      controller.error(error);
+                    if (name === 'playlist') {
+                        let obj;
+                        try {
+                            obj = JSON.parse(result);
+                            data_process.obj_process(obj.playerResponse, config_api.common_ytInitialPlayerResponse_rule, false);
+                            data_process.obj_process(obj.response, config_api.get_rules('yt_watch', 'init'), false);
+                            result = JSON.stringify(obj);
+                        } catch (error) {
+                            log('playlist 解析失败', error, -1);
+                            result = origin_result;
+                        }
+                        is_deal = true;
                     }
-                  },
-                });
-                Object.defineProperty(response, "body", {
-                  get() {
-                    return stream;
-                  },
-                });
-              }
-
-              return response;
-            }
-            return origin_fetch(uri, options).then(fetch_request);
-          };
-          return fetch_;
-        })();
-        unsafeWindow.fetch = fake_fetch;
-        unsafeWindow.fetch.toString = origin_fetch.toString.bind(origin_fetch);
-        const origin_Request = unsafeWindow.Request;
-        if (!check_native("Request", origin_Request)) {
-          log("Request have been modified", -1);
-        }
-        unsafeWindow.Request = class extends unsafeWindow.Request {
-          constructor(input, options = void 0) {
-            super(input, options);
-            this.url_ = input;
-            if (options && "body" in options) {
-              setTimeout(async () => {
-                const ds = new DecompressionStream("gzip");
-                const stream = new Blob([options.body])
-                  .stream()
-                  .pipeThrough(ds);
-                const requestBody = await new Response(stream).text();
-                this.body_ = requestBody;
-              }, 0);
-            }
-          }
-        };
-
-        unsafeWindow.XMLHttpRequest = class extends (
-          unsafeWindow.XMLHttpRequest
-        ) {
-          open(method, url, ...opts) {
-            inject_info.xhr = true;
-            if (
-              ["mobile_yt_watch"].includes(page_type) &&
-              url.includes("m.youtube.com/watch?v")
-            ) {
-              log("xhr watch 返回空", 0);
-              return null;
-            }
-            if (
-              ["mobile_yt_home"].includes(page_type) &&
-              url.includes("m.youtube.com/?pbj")
-            ) {
-              log("xhr home 返回空", 0);
-              return null;
-            }
-            this.url_ = url;
-            return super.open(method, url, ...opts);
-          }
-          send(body) {
-            this.body_ = body;
-            super.send(body);
-          }
-          get xhrResponseValue() {
-            const xhr = this;
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-              let result = super.response;
-              const url = xhr.responseURL;
-              const result_type = typeof result;
-              try {
-                if (url.includes("youtubei/v1/player")) {
-                  // music_watch shorts
-                  if (result_type !== "string") {
-                    log(`XHR ${url} 返回值不是字符串！`, 0);
-                    return result;
-                  }
-                  result = data_process.text_process(
-                    result,
-                    config_api.common_ytInitialPlayerResponse_rule,
-                    "insert",
-                    false,
-                  );
-                  return result;
+                    if (!is_deal) {
+                        let start_time = Date.now();
+                        result = data_process.text_process(result, rule, 'insert', false);
+                        log(name + ' 时间：', Date.now() - start_time, 'spend_time');
+                    }
+                    if (!result) {
+                        result = origin_result;
+                        debugger;
+                    }
+                    return new Response(result, response);
                 }
-                if (url.includes("youtube.com/playlist")) {
-                  debugger;
-                  let obj;
-                  obj = JSON.parse(result);
-                  log(`出现 ${url} ！`, 0);
-                  data_process.obj_process(
-                    obj[2].playerResponse,
-                    ytInitialPlayerResponse_rule,
-                    false,
-                  );
-                  data_process.obj_process(
-                    obj[3].response,
-                    ytInitialData_rule,
-                    false,
-                  );
-                  tmp_debugger_value = obj;
-                  result = JSON.stringify(obj);
-                  return result;
+                const origin_fetch = unsafeWindow.fetch;
+                if (!check_native('fetch', origin_fetch)) {
+                    log('fetch have been modified', -1);
                 }
-              } catch (error) {
-                log(`XHR ${url} 解析失败！`, error, -1);
-              }
+                fake_fetch = function () {
+                    const fetch_ = async function (uri, options) {
+                        async function fetch_request(response) {
+                            let url = response.url;
+                            inject_info.fetch = true;
+                            let request_body;
+                            try {
+                                request_body = uri.body_ ? JSON.parse(uri.body_) : null;
+                            } catch (error) {
+                                request_body = null;
+                            }
+                            if (url.includes('youtubei/v1/next')) {
+                                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_watch' : 'yt_watch', request_body?.videoId ? "init" : 'next');
+                                return await deal_response('next', response, rule);
+                            }
+                            if (url.includes('youtubei/v1/player')) {
+                                return await deal_response('player', response, config_api.common_ytInitialPlayerResponse_rule);
+                            }
+                            if (url.includes('youtubei/v1/reel/reel_watch_sequence')) {
+                                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_shorts' : 'yt_shorts').ytInitialReelWatchSequenceResponse_rule;
+                                return await deal_response('reel_watch_sequence', response, rule);
+                            }
+                            if (url.includes('youtubei/v1/reel/reel_item_watch')) {
+                                // shorts 内容
+                                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_shorts' : 'yt_shorts').ytInitialData_rule;
+                                return await deal_response('reel_item_watch', response, rule);
+                            }
+                            if (url.includes('youtubei/v1/browse?prettyPrint=false')) {
+                                let browse_id = request_body?.browseId;
+                                let rule;
+                                if (href.includes('https://music.youtube.com/')) {
+                                    rule = config_api.get_rules('yt_music', 'browse').ytInitialData_rule;
+                                }
+                                // 忽略音乐主页 影视主页
+                                if (!rule && (['yt_home', 'mobile_yt_home'].includes(page_type) || browse_id === 'FEwhat_to_watch')) {
+                                    if (!browse_id) {
+                                        let node, category_text, node_list, node_index;
+                                        if (mobile_web) {
+                                            node = $('#filter-chip-bar > div > ytm-chip-cloud-chip-renderer.selected');
+                                            node_list = $$('#filter-chip-bar > div > ytm-chip-cloud-chip-renderer');
+                                            node_index = Array.from(node_list).indexOf(node);
+                                            if (node_index !== 1) return response;
+                                        } else {
+                                            node = $('#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer.iron-selected');
+                                            node_list = $$('#chips > yt-chip-cloud-chip-renderer.style-scope.ytd-feed-filter-chip-bar-renderer');
+                                            node_index = Array.from(node_list).indexOf(node);
+                                            if (node_index !== 0) return response;
+                                        }
+
+                                    }
+                                    rule = config_api.get_rules(mobile_web ? 'mobile_yt_home' : 'yt_home', request_body?.browseId ? 'init' : 'browse').ytInitialData_rule;
+                                }
+
+                                return await deal_response('browse', response, rule);
+                            }
+                            if (url.startsWith('https://www.youtube.com/playlist?list=')) {
+                                return await deal_response('playlist', response, []);
+                            }
+                            // if (url.includes('https://m.youtube.com/youtubei/v1/guide')) {
+                            //     return response;
+                            // }
+                            if (url.includes('/youtubei/v1/search')) {
+                                const rule = config_api.get_rules(mobile_web ? 'mobile_yt_search' : 'yt_search').ytInitialData_rule;
+                                return await deal_response('search', response, rule);
+                            }
+                            if (url.includes('/unsubscribe?prettyPrint=false')) {
+                                return await deal_response('unsubscribe', response, []);
+                            }
+                            if (url.includes('/subscribe?prettyPrint=false')) {
+                                return await deal_response('subscribe', response, []);
+                            }
+                            if (url.includes('/v1/get_watch')) {
+                                const originalBody = response.body;
+                                const reader = originalBody.getReader();
+                                const stream = new ReadableStream({
+                                    async start(controller) {
+                                        const chunks = [];
+                                        try {
+                                            // Read all the data first
+                                            while (true) {
+                                                const { done, value } = await reader.read();
+                                                if (done) break;
+                                                chunks.push(value);
+                                            }
+                                            // Merge all the chunks
+                                            const allChunks = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+                                            let position = 0;
+                                            for (const chunk of chunks) {
+                                                allChunks.set(chunk, position);
+                                                position += chunk.length;
+                                            }
+                                            // Convert to text
+                                            let text = new TextDecoder().decode(allChunks);
+                                            const save = text;
+                                            try {
+                                                let json = JSON.parse(text);
+                                                const rules = [
+                                                    "abs:[0].playerResponse.adBreakHeartbeatParams=- $exist",
+                                                    "abs:[0].playerResponse.adSlots=- $exist",
+                                                    "abs:[0].playerResponse.adPlacements=- $exist",
+                                                    "adSlotRenderer.=- $exist",
+                                                    "merchandiseShelfRenderer.=- $exist"
+                                                ];
+                                                const traverse_all = true;
+                                                data_process.obj_process(json, rules, { traverse_all });
+                                                text = JSON.stringify(json);
+                                            } catch (error) {
+                                                log('fetch response text error', error, -1);
+                                                text = save;
+                                            }
+                                            // Convert the modified text back to a Uint8Array and return it.
+                                            const modifiedData = new TextEncoder().encode(text);
+                                            controller.enqueue(modifiedData);
+                                            controller.close();
+                                        } catch (error) {
+                                            log('Stream error: ' + error, -1);
+                                            controller.error(error);
+                                        }
+                                    }
+                                });
+                                // Fix: Create a new Response object to prevent exceptions caused by underlying stream conflicts.
+                                                const newResponse = new Response(stream, {
+                                                status: response.status,
+                                                statusText: response.statusText,
+                                                headers: response.headers
+                                            });
+                                                // Must include the original url property
+                                                Object.defineProperty(newResponse, 'url', { value: response.url });
+                                                return newResponse;
+                            }
+
+                            return response;
+                        }
+                        return origin_fetch(uri, options).then(fetch_request);
+                    };
+                    return fetch_;
+                }();
+                unsafeWindow.fetch = fake_fetch;
+                unsafeWindow.fetch.toString = origin_fetch.toString.bind(origin_fetch);
+                const origin_Request = unsafeWindow.Request;
+                if (!check_native('Request', origin_Request)) {
+                    log('Request have been modified', -1);
+                }
+                unsafeWindow.Request = class extends unsafeWindow.Request {
+                    constructor(input, options = void 0) {
+                        super(input, options);
+                        this.url_ = input;
+                        if (options && 'body' in options) {
+                            setTimeout(async () => {
+                                const ds = new DecompressionStream('gzip');
+                                const stream = new Blob([options.body]).stream().pipeThrough(ds);
+                                const requestBody = await new Response(stream).text();
+                                this.body_ = requestBody;
+                            }, 0);
+                        }
+
+                    }
+                };
+
+                unsafeWindow.XMLHttpRequest = class extends unsafeWindow.XMLHttpRequest {
+                    open(method, url, ...opts) {
+                        inject_info.xhr = true;
+                        if (['mobile_yt_watch'].includes(page_type) && url.includes('m.youtube.com/watch?v')) {
+                            log('xhr watch 返回空', 0);
+                            return null;
+                        }
+                        if (['mobile_yt_home'].includes(page_type) && url.includes('m.youtube.com/?pbj')) {
+                            log('xhr home 返回空', 0);
+                            return null;
+                        }
+                        this.url_ = url;
+                        return super.open(method, url, ...opts);
+                    }
+                    send(body) {
+                        this.body_ = body;
+                        super.send(body);
+                    }
+                    get xhrResponseValue() {
+                        const xhr = this;
+                        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                            let result = super.response;
+                            const url = xhr.responseURL;
+                            const result_type = typeof result;
+                            try {
+                                if (url.includes('youtubei/v1/player')) {
+                                    // music_watch shorts
+                                    if (result_type !== 'string') {
+                                        log(`XHR ${url} 返回值不是字符串！`, 0);
+                                        return result;
+                                    };
+                                    result = data_process.text_process(result, config_api.common_ytInitialPlayerResponse_rule, 'insert', false);
+                                    return result;
+                                }
+                                if (url.includes('youtube.com/playlist')) {
+                                    debugger;
+                                    let obj;
+                                    obj = JSON.parse(result);
+                                    log(`出现 ${url} ！`, 0);
+                                    data_process.obj_process(obj[2].playerResponse, ytInitialPlayerResponse_rule, false);
+                                    data_process.obj_process(obj[3].response, ytInitialData_rule, false);
+                                    tmp_debugger_value = obj;
+                                    result = JSON.stringify(obj);
+                                    return result;
+                                }
+                            } catch (error) {
+                                log(`XHR ${url} 解析失败！`, error, -1);
+                            }
+                        }
+                        return super.response;
+                    }
+                    get responseText() {
+                        return this.xhrResponseValue;
+                    }
+                    get response() {
+                        return this.xhrResponseValue;
+                    }
+                };
+
             }
-            return super.response;
-          }
-          get responseText() {
-            return this.xhrResponseValue;
-          }
-          get response() {
-            return this.xhrResponseValue;
-          }
-        };
-      },
     };
   }
 
@@ -1626,8 +1564,7 @@
 
       yt_home: [
         {
-          seletor:
-            "#contents ytd-rich-section-renderer yt-shelf-header-layout h2.yt-shelf-header-layout__title span.yt-core-attributed-string",
+          seletor: ".ytdChipsShelfWithVideoShelfRendererHost",
           inject: true,
           fun: hide_explore_more_topics_section,
         },
@@ -1635,8 +1572,7 @@
 
       yt_watch: [
         {
-          seletor:
-            "#contents ytd-rich-section-renderer yt-shelf-header-layout h2.yt-shelf-header-layout__title span.yt-core-attributed-string",
+          seletor: ".ytdChipsShelfWithVideoShelfRendererHost",
           inject: true,
           fun: hide_explore_more_topics_section,
         },
@@ -2312,9 +2248,7 @@
                   "",
                 )}.adSlotRenderer$exist`,
               );
-            !mobile_web &&
-              type === "init" &&
-              player_bottom_rules.push(`/.merchandiseShelfRenderer$exist`);
+            !mobile_web && type === "init" && player_bottom_rules.push(`/.merchandiseShelfRenderer$exist`);
             video_item_rules.push(
               `${video_sub_path.replace(/\.[^\.]+$/, ".adSlotRenderer$exist")}`,
             );
@@ -2682,31 +2616,14 @@
   }
 
   function hide_explore_more_topics_section() {
-    const sections = $$("#contents ytd-rich-section-renderer");
-    if (!sections.length) return;
-
-    for (const section of sections) {
-      let titleSpan =
-        section.querySelector(
-          "yt-shelf-header-layout h2.yt-shelf-header-layout__title span.yt-core-attributed-string",
-        ) ||
-        section.querySelector(
-          ".yt-shelf-header-layout__title span.yt-core-attributed-string",
-        ) ||
-        section.querySelector("h2 span.yt-core-attributed-string");
-
-      const text = titleSpan?.textContent?.trim();
-      if (!text) continue;
-
-      const isExploreMoreTopics =
-        text === "Explore more topics" ||
-        text.toLowerCase().includes("explore more");
-
-      if (isExploreMoreTopics) {
+    const chipsShelves = $$(".ytdChipsShelfWithVideoShelfRendererHost");
+    chipsShelves.forEach((el) => {
+      const section = el.closest("ytd-rich-section-renderer") || el;
+      if (section.style.display !== "none") {
         section.style.display = "none";
-        log('Hidden "Explore more topics" section', 0);
+        log('Hidden "Explore more topics" via class', 0);
       }
-    }
+    });
   }
 
   function hide_shorts_sections_if_disabled() {
@@ -3284,13 +3201,8 @@
 
     settingsBtn.addEventListener("click", () => {
       // Toggle: close if already open
-      const existing = unsafeWindow.document.getElementById(
-        "yt-vbt-backup-popup",
-      );
-      if (existing) {
-        existing.remove();
-        return;
-      }
+      const existing = unsafeWindow.document.getElementById("yt-vbt-backup-popup");
+      if (existing) { existing.remove(); return; }
 
       const bp = unsafeWindow.document.createElement("div");
       bp.id = "yt-vbt-backup-popup";
@@ -3317,9 +3229,10 @@
           delete exportData.shorts_list;
           delete exportData.channel_infos;
           delete exportData.login;
-          const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-            type: "application/json",
-          });
+          const blob = new Blob(
+            [JSON.stringify(exportData, null, 2)],
+            { type: "application/json" }
+          );
           const url = URL.createObjectURL(blob);
           const a = unsafeWindow.document.createElement("a");
           a.href = url;
@@ -3358,9 +3271,7 @@
               };
               Object.assign(user_data, imported, preserved);
               user_data_api.set();
-              alert(
-                "Settings imported successfully. The page will now reload.",
-              );
+              alert("Settings imported successfully. The page will now reload.");
               unsafeWindow.location.reload();
             } catch (err) {
               alert("Import failed: " + err.message);
@@ -4006,10 +3917,7 @@
     };
 
     const onMouseMove = (e) => {
-      if (!unsafeWindow.document.contains(popup)) {
-        cleanup();
-        return;
-      }
+      if (!unsafeWindow.document.contains(popup)) { cleanup(); return; }
       if (!isDown) return;
       const x = e.clientX - offsetX;
       const y = e.clientY - offsetY;
@@ -4018,10 +3926,7 @@
     };
 
     const onMouseUp = () => {
-      if (!unsafeWindow.document.contains(popup)) {
-        cleanup();
-        return;
-      }
+      if (!unsafeWindow.document.contains(popup)) { cleanup(); return; }
       if (!isDown) return;
       isDown = false;
       if (posKey) {
@@ -4088,20 +3993,14 @@
 
     const detectDark = () => {
       const html = unsafeWindow.document.documentElement;
-      if (html.hasAttribute("dark") || html.classList.contains("dark-theme"))
-        return true;
-      if (html.hasAttribute("light") || html.classList.contains("light-theme"))
-        return false;
+      if (html.hasAttribute("dark") || html.classList.contains("dark-theme")) return true;
+      if (html.hasAttribute("light") || html.classList.contains("light-theme")) return false;
       try {
-        const bg = (
-          getComputedStyle(html).getPropertyValue(
-            "--yt-spec-base-background",
-          ) || ""
-        ).trim();
+        const bg = (getComputedStyle(html).getPropertyValue("--yt-spec-base-background") || "").trim();
         if (bg.startsWith("rgb")) {
           const nums = bg.match(/\d+/g);
           if (nums && nums.length >= 3) {
-            return (+nums[0] + +nums[1] + +nums[2]) / 3 < 60;
+            return ((+nums[0] + +nums[1] + +nums[2]) / 3) < 60;
           }
         }
       } catch (e) {}
@@ -4109,25 +4008,11 @@
     };
 
     const updatePlaylistPanel = () => {
-      for (const panel of unsafeWindow.document.querySelectorAll(
-        "ytd-playlist-panel-renderer",
-      )) {
-        panel.style.setProperty(
-          "--yt-active-playlist-panel-background-color",
-          "var(--yt-spec-additive-background)",
-        );
-        panel.style.setProperty(
-          "--yt-lightsource-primary-title-color",
-          "var(--ytc-text-primary)",
-        );
-        panel.style.setProperty(
-          "--yt-lightsource-secondary-title-color",
-          "var(--ytc-text-secondary)",
-        );
-        panel.style.setProperty(
-          "--iron-icon-fill-color",
-          "var(--yt-lightsource-primary-title-color)",
-        );
+      for (const panel of unsafeWindow.document.querySelectorAll("ytd-playlist-panel-renderer")) {
+        panel.style.setProperty("--yt-active-playlist-panel-background-color", "var(--yt-spec-additive-background)");
+        panel.style.setProperty("--yt-lightsource-primary-title-color", "var(--ytc-text-primary)");
+        panel.style.setProperty("--yt-lightsource-secondary-title-color", "var(--ytc-text-secondary)");
+        panel.style.setProperty("--iron-icon-fill-color", "var(--yt-lightsource-primary-title-color)");
       }
     };
 
@@ -4136,9 +4021,7 @@
       if (retryRafId) cancelAnimationFrame(retryRafId);
       let attempts = 0;
       const check = () => {
-        if (
-          unsafeWindow.document.querySelector("ytd-playlist-panel-renderer")
-        ) {
+        if (unsafeWindow.document.querySelector("ytd-playlist-panel-renderer")) {
           updatePlaylistPanel();
           return;
         }
@@ -4147,8 +4030,7 @@
       check();
     };
 
-    const buildCss = (d) =>
-      `
+    const buildCss = (d) => (`
 html {
   --ytc-base-background:${d ? "#0f0f0f" : "#fff"};
   --ytc-additive-background:${d ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"};
@@ -4254,12 +4136,7 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
   opacity:1 !important;
   background:var(--yt-spec-base-background,var(--ytc-base-background)) !important;
 }
-`
-        .trim()
-        .replace(
-          "PLACEHOLDER_COLOR",
-          d ? "rgba(255,255,255,0.102)" : "rgba(0,0,0,0.051)",
-        );
+`).trim().replace("PLACEHOLDER_COLOR", d ? "rgba(255,255,255,0.102)" : "rgba(0,0,0,0.051)");
 
     const CSS_CACHE = { dark: buildCss(true), light: buildCss(false) };
 
@@ -4269,9 +4146,7 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       if (!styleEl) {
         styleEl = unsafeWindow.document.createElement("style");
         styleEl.id = styleId;
-        (
-          unsafeWindow.document.head || unsafeWindow.document.documentElement
-        ).appendChild(styleEl);
+        (unsafeWindow.document.head || unsafeWindow.document.documentElement).appendChild(styleEl);
       }
       const newCss = isDark ? CSS_CACHE.dark : CSS_CACHE.light;
       if (styleEl.textContent !== newCss) styleEl.textContent = newCss;
@@ -4283,14 +4158,11 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
 
     const navListener = () => apply();
     const darkListener = () => apply();
-    unsafeWindow.addEventListener("yt-navigate-finish", navListener, {
-      passive: true,
-    });
-    unsafeWindow.addEventListener("yt-dark-mode-toggled", darkListener, {
-      passive: true,
-    });
+    unsafeWindow.addEventListener("yt-navigate-finish", navListener, { passive: true });
+    unsafeWindow.addEventListener("yt-dark-mode-toggled", darkListener, { passive: true });
     unsafeWindow.__yt_saturated_hover_listeners = [navListener, darkListener];
   }
+
 
   function init_disable_play_on_hover() {
     const styleId = "disable-play-on-hover-style";
@@ -5801,6 +5673,8 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
           hide_ai_summary: "off",
           hide_microphone_icon: "off",
           hide_paid_promotion: "off",
+          show_full_video_title: "off",
+          hide_grid_avatar: "off",
           disable_saturated_hover: "off",
           old_player_ui: "off",
           restore_red_progress_bar: "on",
@@ -5816,6 +5690,9 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
             music_offtopic: "on",
           },
           login: false,
+          grid_content_per_row: 3,
+          grid_news_per_row: 3,
+          grid_shorts_per_row: 3,
         };
         let diff = false;
         user_data_listener.set();
@@ -5947,14 +5824,7 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
           };
           diff = true;
         } else {
-          const defaults = [
-            "sponsor",
-            "intro",
-            "outro",
-            "selfpromo",
-            "interaction",
-            "music_offtopic",
-          ];
+          const defaults = ["sponsor", "intro", "outro", "selfpromo", "interaction", "music_offtopic"];
           for (const cat of defaults) {
             if (tmp_user_data.sb_categories[cat] === undefined) {
               tmp_user_data.sb_categories[cat] = "on";
@@ -7362,14 +7232,12 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       }
 
       // Hide reel shelf renderers (Shorts shelves on home/subscriptions)
-      document
-        .querySelectorAll("ytd-reel-shelf-renderer")
-        .forEach((element) => {
-          hideElement(element);
-        });
+      document.querySelectorAll("ytd-reel-shelf-renderer").forEach((element) => {
+        hideElement(element);
+      });
 
       // Hide Shorts sidebar entry in the guide menu
-      document.querySelectorAll("ytd-guide-entry-renderer").forEach((entry) => {
+      document.querySelectorAll('ytd-guide-entry-renderer').forEach((entry) => {
         const link = entry.querySelector('a[title="Shorts"]');
         if (link) {
           hideElement(entry);
@@ -7377,148 +7245,108 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       });
 
       // Hide Shorts in compact sidebar (mini guide)
-      document
-        .querySelectorAll("ytd-mini-guide-entry-renderer")
-        .forEach((entry) => {
-          const link = entry.querySelector('a[title="Shorts"]');
-          if (link) {
-            hideElement(entry);
-          }
-        });
+      document.querySelectorAll('ytd-mini-guide-entry-renderer').forEach((entry) => {
+        const link = entry.querySelector('a[title="Shorts"]');
+        if (link) {
+          hideElement(entry);
+        }
+      });
 
       // Hide Shorts chips in filter bar
-      document
-        .querySelectorAll("yt-chip-cloud-chip-renderer")
-        .forEach((element) => {
-          const chipText = element.querySelector(".ytChipShapeChip");
-          if (chipText?.textContent.trim() === "Shorts") {
-            hideElement(element);
-          }
-        });
+      document.querySelectorAll("yt-chip-cloud-chip-renderer").forEach((element) => {
+        const chipText = element.querySelector(".ytChipShapeChip");
+        if (chipText?.textContent.trim() === "Shorts") {
+          hideElement(element);
+        }
+      });
 
       // Hide individual Shorts items in search/home/subscriptions
-      document
-        .querySelectorAll('a[href^="/shorts/"]:not([data-shorts-processed])')
-        .forEach((link) => {
-          link.setAttribute("data-shorts-processed", "true");
+      document.querySelectorAll('a[href^="/shorts/"]:not([data-shorts-processed])').forEach((link) => {
+        link.setAttribute("data-shorts-processed", "true");
 
-          // Hide video renderer (for search results)
-          const videoRenderer = link.closest("ytd-video-renderer");
-          if (videoRenderer) {
-            hideElement(videoRenderer);
-          }
+        // Hide video renderer (for search results)
+        const videoRenderer = link.closest("ytd-video-renderer");
+        if (videoRenderer) {
+          hideElement(videoRenderer);
+        }
 
-          // Hide grid video renderer (for grid view)
-          const gridRenderer = link.closest("ytd-grid-video-renderer");
-          if (gridRenderer) {
-            hideElement(gridRenderer);
-          }
+        // Hide grid video renderer (for grid view)
+        const gridRenderer = link.closest("ytd-grid-video-renderer");
+        if (gridRenderer) {
+          hideElement(gridRenderer);
+        }
 
-          // Hide rich item renderer (for home/subscriptions)
-          const richItem = link.closest("ytd-rich-item-renderer");
-          if (richItem) {
-            hideElement(richItem);
-          }
+        // Hide rich item renderer (for home/subscriptions)
+        const richItem = link.closest("ytd-rich-item-renderer");
+        if (richItem) {
+          hideElement(richItem);
+        }
 
-          // Hide compact video renderer
-          const compactRenderer = link.closest("ytd-compact-video-renderer");
-          if (compactRenderer) {
-            hideElement(compactRenderer);
-          }
-        });
+        // Hide compact video renderer
+        const compactRenderer = link.closest("ytd-compact-video-renderer");
+        if (compactRenderer) {
+          hideElement(compactRenderer);
+        }
+      });
 
       // Hide mobile Shorts lockup view models
-      document
-        .querySelectorAll(
-          "ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model",
-        )
-        .forEach((element) => {
-          hideElement(element);
-        });
+      document.querySelectorAll("ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model").forEach((element) => {
+        hideElement(element);
+      });
 
       // Hide grid shelf items containing Shorts
-      document
-        .querySelectorAll(
-          ".ytGridShelfViewModelGridShelfItem:not([data-shorts-processed])",
-        )
-        .forEach((item) => {
-          if (
-            item.querySelector(
-              'ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model, a[href^="/shorts/"]',
-            )
-          ) {
-            hideElement(item);
-          }
-          item.setAttribute("data-shorts-processed", "true");
-        });
+      document.querySelectorAll(".ytGridShelfViewModelGridShelfItem:not([data-shorts-processed])").forEach((item) => {
+        if (item.querySelector('ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model, a[href^="/shorts/"]')) {
+          hideElement(item);
+        }
+        item.setAttribute("data-shorts-processed", "true");
+      });
 
       // Hide grid-shelf-view-model containing Shorts
-      document
-        .querySelectorAll("grid-shelf-view-model:not([data-shorts-processed])")
-        .forEach((shelf) => {
-          shelf.setAttribute("data-shorts-processed", "true");
-          const hasShorts =
-            shelf.querySelector(
-              "ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model",
-            ) ||
-            shelf
-              .querySelector(
-                '.shelf-header-layout-wiz__title span[role="text"]',
-              )
-              ?.textContent?.includes("Shorts");
-          if (hasShorts) {
-            hideElement(shelf);
-          }
-        });
+      document.querySelectorAll("grid-shelf-view-model:not([data-shorts-processed])").forEach((shelf) => {
+        shelf.setAttribute("data-shorts-processed", "true");
+        const hasShorts =
+          shelf.querySelector("ytm-shorts-lockup-view-model-v2, ytm-shorts-lockup-view-model") ||
+          shelf.querySelector('.shelf-header-layout-wiz__title span[role="text"]')?.textContent?.includes("Shorts");
+        if (hasShorts) {
+          hideElement(shelf);
+        }
+      });
 
       // Hide Shorts tab on channel pages and subscriptions using tab-title attribute
-      document
-        .querySelectorAll('yt-tab-shape[tab-title="Shorts"]')
-        .forEach((tab) => {
-          hideElement(tab);
-        });
+      document.querySelectorAll('yt-tab-shape[tab-title="Shorts"]').forEach((tab) => {
+        hideElement(tab);
+      });
 
       // Fallback for Shorts tabs without tab-title attribute
-      document
-        .querySelectorAll("yt-tab-shape:not([data-shorts-processed])")
-        .forEach((tab) => {
-          tab.setAttribute("data-shorts-processed", "true");
-          const tabText = tab.querySelector(".yt-tab-shape__tab");
-          if (tabText?.textContent?.trim() === "Shorts") {
-            hideElement(tab);
-          }
-        });
+      document.querySelectorAll('yt-tab-shape:not([data-shorts-processed])').forEach((tab) => {
+        tab.setAttribute("data-shorts-processed", "true");
+        const tabText = tab.querySelector('.yt-tab-shape__tab');
+        if (tabText?.textContent?.trim() === "Shorts") {
+          hideElement(tab);
+        }
+      });
 
       // Hide Shorts sections with "Shorts" title in rich sections
-      document
-        .querySelectorAll(
-          "ytd-rich-section-renderer:not([data-shorts-processed])",
-        )
-        .forEach((section) => {
-          section.setAttribute("data-shorts-processed", "true");
-          const titleSpan = section.querySelector(
-            ".yt-shelf-header-layout__title .yt-core-attributed-string, .yt-shelf-header-layout__title-row .yt-core-attributed-string",
-          );
-          const text = titleSpan?.textContent?.trim();
-          if (text === "Shorts") {
-            hideElement(section);
-          }
-        });
+      document.querySelectorAll("ytd-rich-section-renderer:not([data-shorts-processed])").forEach((section) => {
+        section.setAttribute("data-shorts-processed", "true");
+        const titleSpan = section.querySelector(
+          ".yt-shelf-header-layout__title .yt-core-attributed-string, .yt-shelf-header-layout__title-row .yt-core-attributed-string"
+        );
+        const text = titleSpan?.textContent?.trim();
+        if (text === "Shorts") {
+          hideElement(section);
+        }
+      });
 
       // Hide ytd-rich-shelf-renderer with Shorts content
-      document
-        .querySelectorAll(
-          "ytd-rich-shelf-renderer:not([data-shorts-processed])",
-        )
-        .forEach((shelf) => {
-          shelf.setAttribute("data-shorts-processed", "true");
-          const title = shelf.querySelector(
-            "#title-container h2, .ytd-rich-shelf-renderer #title",
-          );
-          if (title?.textContent?.trim() === "Shorts") {
-            hideElement(shelf);
-          }
-        });
+      document.querySelectorAll("ytd-rich-shelf-renderer:not([data-shorts-processed])").forEach((shelf) => {
+        shelf.setAttribute("data-shorts-processed", "true");
+        const title = shelf.querySelector("#title-container h2, .ytd-rich-shelf-renderer #title");
+        if (title?.textContent?.trim() === "Shorts") {
+          hideElement(shelf);
+        }
+      });
 
       hide_shorts_sections_if_disabled();
     }
@@ -7549,6 +7377,159 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       reRun: blockShorts,
     };
   }
+
+
+  /* ====== HOME FEED GRID ROW CONTROLLER ====== */
+
+  const gridDynamicStyle = (() => {
+    const el = unsafeWindow.document.createElement("style");
+    el.id = "vbt-grid-dynamic-style";
+    unsafeWindow.document.head.appendChild(el);
+    return el;
+  })();
+
+  // Inject static grid CSS (layout fixes from original Grid Row Controller)
+  (() => {
+    const el = unsafeWindow.document.createElement("style");
+    el.id = "vbt-grid-static-style";
+    el.textContent = `
+      ytd-rich-item-renderer[rendered-from-rich-grid][is-in-first-column] {
+        margin-left: calc(var(--ytd-rich-grid-item-margin) / 2) !important;
+      }
+      ytd-rich-item-renderer[hidden][is-responsive-grid],
+      [is-slim-media] { display: block !important; }
+      ytd-rich-item-renderer { margin-bottom: var(--ytd-rich-grid-row-margin) !important; }
+      .button-container.ytd-rich-shelf-renderer { display: none !important; }
+      #dismissible.ytd-rich-shelf-renderer {
+        padding-bottom: 0 !important;
+        border-bottom: none !important;
+      }
+      #selected-chip-content { width: 0% !important; }
+      #spacer.ytd-shelf-renderer { flex: 9 !important; }
+      ytd-feed-filter-chip-bar-renderer[frosted-glass-mode=with-chipbar]
+        #chips-wrapper.ytd-feed-filter-chip-bar-renderer { flex-direction: row; }
+      #chips-content { width: 92% !important; }
+      .itemPerRowControl {
+        display: flex; justify-content: right; align-items: center;
+        z-index: 2025; flex: 1; gap: 10px; box-sizing: border-box;
+        user-select: none; width: 8%;
+      }
+      .itemPerRowControl button {
+        border: none; color: var(--yt-spec-text-primary);
+        background-color: transparent; font-size: 24px;
+        text-align: center; display: inline-block;
+        height: 30px; aspect-ratio: 1/1; border-radius: 50%;
+      }
+      .itemPerRowControl button:hover {
+        background-color: var(--yt-spec-button-chip-background-hover);
+        cursor: pointer;
+      }
+    `;
+    unsafeWindow.document.head.appendChild(el);
+  })();
+
+  function gridUpdatePageLayout() {
+    gridDynamicStyle.textContent = `
+      ytd-rich-grid-renderer {
+        --ytd-rich-grid-items-per-row: ${user_data.grid_content_per_row} !important;
+      }
+      ytd-rich-shelf-renderer:not([is-shorts]) {
+        --ytd-rich-grid-items-per-row: ${user_data.grid_news_per_row} !important;
+      }
+      ytd-rich-shelf-renderer[is-shorts] {
+        --ytd-rich-grid-slim-items-per-row: ${user_data.grid_shorts_per_row} !important;
+        --ytd-rich-grid-items-per-row: ${user_data.grid_shorts_per_row} !important;
+      }
+    `;
+  }
+
+  function gridIsCreatorPage() {
+    return unsafeWindow.location.pathname.startsWith("/@");
+  }
+
+  function gridCreateControlDiv(type) {
+    const controlDiv = unsafeWindow.document.createElement("div");
+    controlDiv.classList.add("style-scope", "ytd-rich-grid-renderer", "itemPerRowControl");
+
+    ["-", "+"].forEach((symbol) => {
+      const btn = unsafeWindow.document.createElement("button");
+      btn.textContent = symbol;
+      btn.addEventListener("click", () => {
+        if (symbol === "+") user_data["grid_" + type + "_per_row"]++;
+        else if (user_data["grid_" + type + "_per_row"] > 1) user_data["grid_" + type + "_per_row"]--;
+        gridUpdatePageLayout();
+        user_data_api.set();
+      });
+      controlDiv.appendChild(btn);
+    });
+
+    return controlDiv;
+  }
+
+  function gridTryAttachControl(anchor, t) {
+    if (!anchor) return;
+    if (gridIsCreatorPage()) return;
+    if (anchor.parentNode?.querySelector?.(".itemPerRowControl")) return;
+
+    const type = typeof t.type === "function" ? t.type(anchor) : t.type;
+    const control = gridCreateControlDiv(type);
+
+    if (t.selector === "#chips-wrapper") {
+      control.classList.add("justify-left-custom");
+    } else if (t.selector.startsWith("ytd-shelf-renderer")) {
+      control.classList.add("justify-center-custom");
+    }
+
+    t.place(anchor, control);
+  }
+
+  function gridInitWatcher() {
+    const targets = [
+      {
+        selector: "#chips-wrapper",
+        type: "content",
+        place: (anchor, control) => anchor.appendChild(control),
+      },
+      {
+        selector: "ytd-rich-section-renderer #menu-container",
+        type: (node) =>
+          node.closest("ytd-rich-section-renderer")?.querySelector("[is-shorts]")
+            ? "shorts"
+            : "news",
+        place: (anchor, control) => anchor.parentNode.insertBefore(control, anchor),
+      },
+      {
+        selector: "ytd-shelf-renderer #title-container.style-scope.ytd-shelf-renderer",
+        type: "content",
+        place: (anchor, control) => anchor.appendChild(control),
+      },
+    ];
+
+    // Scan elements already in DOM
+    for (const t of targets) {
+      unsafeWindow.document.querySelectorAll(t.selector).forEach((anchor) => {
+        gridTryAttachControl(anchor, t);
+      });
+    }
+
+    const observer = new MutationObserver((muts) => {
+      for (const m of muts) {
+        for (const node of m.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          for (const t of targets) {
+            const anchor = node.matches(t.selector) ? node : node.querySelector?.(t.selector);
+            if (anchor) gridTryAttachControl(anchor, t);
+          }
+        }
+      }
+    });
+
+    observer.observe(unsafeWindow.document.documentElement, { subtree: true, childList: true });
+  }
+
+  // Kick off grid layout immediately
+  gridUpdatePageLayout();
+  gridInitWatcher();
 
   /* ====== 2666 WATCH PAGE ELEMENTS HIDER PANEL ====== */
 
@@ -7607,6 +7588,9 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       rules.push("#sponsor-button { display: none !important; }");
     }
 
+    // Always hide "Explore more topics" — target parent section to eliminate blank space
+    rules.push("ytd-rich-section-renderer:has(.ytdChipsShelfWithVideoShelfRendererHost) { display: none !important; }");
+
     if (user_data.hide_fullscreen_controls === "on") {
       rules.push(
         "#movie_player .ytp-overlay-top-right { display: none !important; }",
@@ -7629,6 +7613,16 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       rules.push(
         "ytm-expandable-metadata-renderer:has(path[d*='gemini' i]) { display: none !important; }",
       );
+      // New in v1.9.1: hide AI summary in search results
+      rules.push(
+        "ytd-expandable-metadata-renderer[has-video-summary] { display: none !important; }",
+      );
+      rules.push(
+        "#expandable-metadata:has(video-summary-content-view-model) { display: none !important; }",
+      );
+      rules.push(
+        "#expandable-metadata:has(ytd-expandable-metadata-renderer) { display: none !important; }",
+      );
     }
 
     if (user_data.hide_microphone_icon === "on") {
@@ -7646,12 +7640,42 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       );
     }
 
+    if (user_data.hide_grid_avatar === "on") {
+      rules.push(".ytLockupMetadataViewModelAvatar { display: none !important; }");
+    }
+
+    if (user_data.show_full_video_title === "on") {
+      rules.push(`
+        /* Home grid, search results, related sidebar — new lockup */
+        .yt-lockup-metadata-view-model__title,
+        .yt-lockup-metadata-view-model__title a,
+        .ytLockupMetadataViewModelTitle,
+        .ytLockupMetadataViewModelTitle a,
+        /* Legacy #video-title spans */
+        #video-title.ytd-rich-grid-media,
+        #video-title.ytd-compact-video-renderer,
+        #video-title.ytd-video-renderer,
+        #video-title.ytd-grid-video-renderer,
+        #video-title {
+          -webkit-line-clamp: unset !important;
+          line-clamp: unset !important;
+          max-height: unset !important;
+          overflow: visible !important;
+          white-space: normal !important;
+        }
+      `);
+    }
+
     if (user_data.hide_paid_promotion === "on") {
-      rules.push(".ytp-paid-content-overlay { display: none !important; }");
+      rules.push(
+        ".ytp-paid-content-overlay { display: none !important; }",
+      );
       rules.push(
         ".ytp-paid-content-overlay-link { display: none !important; }",
       );
-      rules.push(".YtmPaidContentOverlayHost { display: none !important; }");
+      rules.push(
+        ".YtmPaidContentOverlayHost { display: none !important; }",
+      );
       rules.push(
         "ytm-paid-content-overlay-renderer { display: none !important; }",
       );
@@ -7969,6 +7993,8 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       row("hb_restore_red_progress_bar", "Restore red progress bar"),
       row("hb_paid_promotion", "Hide paid promotion overlay"),
       row("hb_old_player_ui", "Old Player UI (reload required)"),
+      row("hb_full_video_title", "Show full video title"),
+      row("hb_grid_avatar", "Hide channel avatars (home grid)"),
     ];
 
     const rows = [...actionRows, ...otherRows];
@@ -8027,20 +8053,20 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
 
     // SponsorBlock categories
     const SB_CATEGORY_LABELS = {
-      sponsor: "Sponsor",
-      intro: "Intro / Intermission",
-      outro: "Outro / Credits",
-      selfpromo: "Self-promotion",
-      interaction: "Interaction reminder",
-      music_offtopic: "Music: non-music section",
+      sponsor:       "Sponsor",
+      intro:         "Intro / Intermission",
+      outro:         "Outro / Credits",
+      selfpromo:     "Self-promotion",
+      interaction:   "Interaction reminder",
+      music_offtopic:"Music: non-music section",
     };
     const SB_CATEGORY_DOTS = {
-      sponsor: "#00d400",
-      intro: "#00ffff",
-      outro: "#0202ed",
-      selfpromo: "#ffff00",
-      interaction: "#cc00ff",
-      music_offtopic: "#ff9900",
+      sponsor:       "#00d400",
+      intro:         "#00ffff",
+      outro:         "#0202ed",
+      selfpromo:     "#ffff00",
+      interaction:   "#cc00ff",
+      music_offtopic:"#ff9900",
     };
 
     const sbSection = unsafeWindow.document.createElement("div");
@@ -8102,8 +8128,7 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     if (!sbEnabled) {
       sbSectionHeader.style.opacity = "0.45";
       sbSectionHeader.style.pointerEvents = "none";
-      sbSectionHeader.title =
-        "Enable SponsorBlock first to configure categories";
+      sbSectionHeader.title = "Enable SponsorBlock first to configure categories";
       Object.values(sbCheckboxes).forEach((inp) => {
         inp.disabled = true;
         inp.parentElement.style.opacity = "0.45";
@@ -8113,6 +8138,73 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     for (const { div } of otherRows) {
       body.appendChild(div);
     }
+
+    // ---- Manage videos per row section ----
+    const gridSection = unsafeWindow.document.createElement("div");
+    gridSection.className = "yt-hb-section";
+
+    const gridSectionHeader = unsafeWindow.document.createElement("div");
+    gridSectionHeader.className = "yt-hb-section-header";
+
+    const gridCaret = unsafeWindow.document.createElement("span");
+    gridCaret.className = "yt-hb-caret";
+    gridCaret.textContent = "▾";
+    gridCaret.style.transform = "rotate(-90deg)"; // starts collapsed
+
+    const gridSectionTitle = unsafeWindow.document.createElement("span");
+    gridSectionTitle.textContent = "Manage videos per row";
+    gridSectionHeader.append(gridCaret, gridSectionTitle);
+
+    const gridSectionBody = unsafeWindow.document.createElement("div");
+    gridSectionBody.className = "yt-hb-section-body collapsed";
+
+    gridSectionHeader.addEventListener("click", () => {
+      const collapsed = gridSectionBody.classList.toggle("collapsed");
+      gridCaret.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0deg)";
+    });
+
+    const gridRows = [
+      { id: "grc_content", label: "Normal videos", key: "grid_content_per_row" },
+      { id: "grc_news",    label: "News",          key: "grid_news_per_row"    },
+      { id: "grc_shorts",  label: "Shorts",        key: "grid_shorts_per_row"  },
+    ];
+
+    const gridSelects = {};
+    for (const { id, label, key } of gridRows) {
+      const rowDiv = unsafeWindow.document.createElement("div");
+      rowDiv.className = "yt-hb-select-row";
+
+      const lbl = unsafeWindow.document.createElement("label");
+      lbl.htmlFor = id;
+      lbl.textContent = label;
+
+      const select = unsafeWindow.document.createElement("select");
+      select.id = id;
+
+      [{ text: "3 (Default)", value: 3 }, { text: "4", value: 4 }, { text: "5", value: 5 }]
+        .forEach(({ text, value }) => {
+          const opt = unsafeWindow.document.createElement("option");
+          opt.value = value;
+          opt.textContent = text;
+          select.appendChild(opt);
+        });
+
+      select.value = user_data[key] || 3;
+
+      select.addEventListener("change", () => {
+        user_data[key] = parseInt(select.value, 10);
+        user_data_api.set();
+        gridUpdatePageLayout();
+      });
+
+      gridSelects[key] = select;
+      rowDiv.append(lbl, select);
+      gridSectionBody.appendChild(rowDiv);
+    }
+
+    gridSection.append(gridSectionHeader, gridSectionBody);
+    body.appendChild(gridSection);
+    // ---- end Manage videos per row section ----
 
     popup.append(header, body);
     unsafeWindow.document.body.appendChild(popup);
@@ -8135,6 +8227,8 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       ["hb_restore_red_progress_bar", "restore_red_progress_bar"],
       ["hb_paid_promotion", "hide_paid_promotion"],
       ["hb_old_player_ui", "old_player_ui"],
+      ["hb_full_video_title", "show_full_video_title"],
+      ["hb_grid_avatar", "hide_grid_avatar"],
     ];
 
     const checkboxById = {};
@@ -8207,11 +8301,7 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
         user_data_api.set();
         apply_hide_buttons_css();
         if (key === "old_player_ui") {
-          if (
-            confirm(
-              "Old Player UI requires a page reload to take effect. Reload now?",
-            )
-          ) {
+          if (confirm("Old Player UI requires a page reload to take effect. Reload now?")) {
             unsafeWindow.location.reload();
           }
         }
@@ -8238,5 +8328,6 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     }
     closeBtn.addEventListener("click", close);
     make_popup_draggable(popup, header, "pos_2666");
+
   }
 })();
