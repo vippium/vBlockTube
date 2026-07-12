@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
-// @version      1.9.0
+// @version      1.9.1
 // @description  Blocks YouTube ads and provides enhanced features for a better viewing experience.
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -711,138 +711,62 @@
     const style = unsafeWindow.document.createElement("style");
     style.textContent = `
         ytd-watch-flexy #secondary {
-          max-width: 402px !important;
+          --ytd-watch-flexy-sidebar-width: 402px !important;
+          --ytd-watch-flexy-sidebar-min-width: 300px !important;
+          max-width: var(--ytd-watch-flexy-sidebar-width) !important;
         }
 
-        #secondary #related .yt-lockup-view-model--vertical {
-          display: flex !important;
+        #secondary #related .ytLockupViewModelVertical {
           flex-direction: row !important;
           height: inherit !important;
         }
 
-        #secondary #related .yt-lockup-view-model--vertical .yt-lockup-view-model__content-image {
+        #secondary #related .ytLockupViewModelVertical .ytLockupViewModelContentImage {
           display: flex !important;
           flex: none !important;
           padding-right: 16px !important;
           justify-content: center !important;
+          max-width: 500px !important;
           width: 168px !important;
           padding-bottom: 0 !important;
         }
 
-        #secondary #related .yt-lockup-view-model__content-image {
+        #secondary #related .ytLockupViewModelContentImage {
           max-width: 168px !important;
         }
 
-        #secondary #related .yt-lockup-view-model--vertical .yt-lockup-view-model__metadata {
+        #secondary #related .ytLockupViewModelVertical .ytLockupViewModelMetadata {
           flex: 1 !important;
         }
 
-        #secondary #related .yt-lockup-view-model--vertical.yt-lockup-view-model--collection-stack-1 {
+        #secondary #related .ytLockupViewModelVertical.ytLockupViewModelCollectionStack1 {
           position: relative !important;
           margin-top: 6px !important;
         }
 
-        #secondary #related .yt-lockup-view-model--vertical.yt-lockup-view-model--collection-stack-2 {
+        #secondary #related .ytLockupViewModelVertical.ytLockupViewModelCollectionStack2 {
           position: relative !important;
           margin-top: 10px !important;
         }
 
-        #secondary #related .yt-lockup-view-model--vertical.yt-lockup-view-model--compact .yt-lockup-view-model__content-image {
+        #secondary #related .ytLockupViewModelHorizontal.ytLockupViewModelCompact .ytLockupViewModelContentImage {
           padding-right: 8px !important;
         }
 
-        #secondary #related .yt-lockup-metadata-view-model--vertical .yt-lockup-metadata-view-model__avatar {
+        #secondary #related .ytLockupViewModelVertical .ytLockupMetadataViewModelAvatar {
           display: none !important;
         }
 
-        #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns]:not(:has(ytd-item-section-renderer)) #items,
-        #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] #contents {
+        #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns]:not(:has(ytd-item-section-renderer)) #items.ytd-watch-next-secondary-results-renderer,
+        #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] #contents.ytd-item-section-renderer {
           grid-template-columns: 1fr !important;
         }
 
-        #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] .lockup {
+        #secondary #related ytd-watch-next-secondary-results-renderer[use-dynamic-secondary-columns] .lockup.ytd-watch-next-secondary-results-renderer {
           margin-bottom: 0 !important;
         }
       `;
     unsafeWindow.document.head.appendChild(style);
-
-    const applyInlineStyles = (element) => {
-      if (!element) return;
-
-      element
-        .querySelectorAll(".yt-lockup-view-model--vertical")
-        .forEach((el) => {
-          el.style.cssText =
-            "display: flex !important; flex-direction: row !important; height: inherit !important;";
-        });
-
-      element
-        .querySelectorAll(
-          ".yt-lockup-view-model--vertical .yt-lockup-view-model__content-image",
-        )
-        .forEach((el) => {
-          el.style.cssText =
-            "display: flex !important; flex: none !important; padding-right: 16px !important; justify-content: center !important; width: 168px !important; padding-bottom: 0 !important;";
-        });
-
-      element
-        .querySelectorAll(".yt-lockup-view-model__content-image")
-        .forEach((el) => {
-          if (!el.querySelector(".yt-lockup-view-model--vertical")) {
-            el.style.maxWidth = "168px !important";
-          }
-        });
-
-      element
-        .querySelectorAll(
-          ".yt-lockup-view-model--vertical .yt-lockup-view-model__metadata",
-        )
-        .forEach((el) => {
-          el.style.flex = "1 !important";
-        });
-
-      element
-        .querySelectorAll(
-          ".yt-lockup-metadata-view-model--vertical .yt-lockup-metadata-view-model__avatar",
-        )
-        .forEach((el) => {
-          el.style.display = "none !important";
-        });
-    };
-
-    const relatedContainer = $("#secondary #related");
-    if (relatedContainer) {
-      applyInlineStyles(relatedContainer);
-    }
-
-    const debouncedApplyStyles = debounce(() => {
-      applyInlineStyles($("#secondary #related"));
-    }, 300);
-
-    const observer = new MutationObserver((mutations) => {
-      let hasRelevantChange = false;
-      mutations.forEach((mutation) => {
-        if (mutation.type === "childList") {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) {
-              hasRelevantChange = true;
-              applyInlineStyles(node);
-            }
-          });
-        }
-      });
-      if (hasRelevantChange) {
-        debouncedApplyStyles();
-      }
-    });
-
-    const secondary = $("#secondary");
-    if (secondary) {
-      observer.observe(secondary, {
-        childList: true,
-        subtree: true,
-      });
-    }
   }
 
   function restore_sidebar_layout_on_ytInitialData(data) {
