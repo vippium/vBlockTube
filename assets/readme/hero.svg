@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">vBlockTube - YouTube ad blocking userscript</title>
+  <desc id="desc">A dark technical hero showing the vBlockTube userscript name, supported YouTube surfaces, and a stylized watch-page panel with blocked ad lanes and modern check-marked controls.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b0d10"/>
+      <stop offset="100%" stop-color="#11161c"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff4d4f"/>
+      <stop offset="100%" stop-color="#ff7a59"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2028"/>
+      <stop offset="100%" stop-color="#12171e"/>
+    </linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/>
+    </pattern>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.35 0"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="360" rx="28" fill="url(#bg)"/>
+  <rect width="1200" height="360" rx="28" fill="url(#grid)"/>
+
+  <circle cx="1080" cy="74" r="92" fill="#ff4d4f" fill-opacity="0.08" filter="url(#softGlow)"/>
+  <circle cx="1034" cy="116" r="160" fill="#7fd7c7" fill-opacity="0.05" filter="url(#softGlow)"/>
+
+  <g transform="translate(56 46)">
+    <text x="0" y="18" fill="#9aa4b2" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" letter-spacing="2.4">GREASYFORK USERSCRIPT</text>
+    <text x="0" y="88" fill="#f5f7fa" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="62" font-weight="800">vBlockTube</text>
+    <text x="0" y="128" fill="#d6dde6" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="24" font-weight="500">Keep YouTube clean with ads blocked, clutter trimmed,</text>
+    <text x="0" y="160" fill="#d6dde6" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="24" font-weight="500">and playback controls across every major surface.</text>
+
+    <g transform="translate(0 194)">
+      <rect x="0" y="0" width="268" height="40" rx="20" fill="#151b22" stroke="#2c3642"/>
+      <circle cx="20" cy="20" r="5" fill="#4ade80">
+        <animate attributeName="opacity" values="1;0.25;1" dur="1.2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="38" y="25" fill="#f5f7fa" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14">v1.9.1 · Active Updates</text>
+    </g>
+  </g>
+
+  <g transform="translate(736 54)">
+    <rect x="0" y="0" width="392" height="252" rx="24" fill="url(#screen)" stroke="#2d3742"/>
+    <rect x="20" y="20" width="344" height="20" rx="10" fill="#252c35"/>
+    <text x="84" y="35" fill="#9aa4b2" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">youtube.com</text>
+    <circle cx="38" cy="30" r="5" fill="#ff4d4f"/>
+    <circle cx="54" cy="30" r="5" fill="#ffc14d"/>
+    <circle cx="70" cy="30" r="5" fill="#5dd39e"/>
+
+    <rect x="20" y="56" width="198" height="140" rx="16" fill="#0f141a" stroke="#27303a"/>
+    <rect x="36" y="74" width="166" height="92" rx="12" fill="#131922"/>
+    <rect x="48" y="86" width="142" height="56" rx="10" fill="#ff4d4f" fill-opacity="0.10"/>
+    <path d="M 82 97 L 82 131 L 113 114 Z" fill="#f5f7fa"/>
+    <text x="124" y="121" fill="#ff6a6a" fill-opacity="0.45" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700" letter-spacing="2">ADS</text>
+    <rect x="36" y="176" width="142" height="8" rx="4" fill="#34404d"/>
+    <rect x="36" y="190" width="104" height="8" rx="4" fill="#34404d"/>
+
+    <path d="M 132 80 L 208 156" stroke="url(#accent)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 208 80 L 132 156" stroke="url(#accent)" stroke-width="6" stroke-linecap="round"/>
+
+    <g transform="translate(232 48)">
+      <g transform="translate(0 0)">
+        <rect x="0.5" y="8.5" width="19" height="19" rx="6" fill="none" stroke="#2f3a46"/>
+        <path d="M 5.5 18.5 L 9 22 L 15.5 12.5" fill="none" stroke="#60d69d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="28" y="23" fill="#f5f7fa" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="700">Ads blocked</text>
+      </g>
+      <g transform="translate(0 38)">
+        <rect x="0.5" y="8.5" width="19" height="19" rx="6" fill="none" stroke="#2f3a46"/>
+        <path d="M 5.5 18.5 L 9 22 L 15.5 12.5" fill="none" stroke="#60d69d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="28" y="23" fill="#d6dde6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">Shorts cleanup</text>
+      </g>
+      <g transform="translate(0 76)">
+        <rect x="0.5" y="8.5" width="19" height="19" rx="6" fill="none" stroke="#2f3a46"/>
+        <path d="M 5.5 18.5 L 9 22 L 15.5 12.5" fill="none" stroke="#60d69d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="28" y="23" fill="#d6dde6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">SponsorBlock</text>
+      </g>
+      <g transform="translate(0 114)">
+        <rect x="0.5" y="8.5" width="19" height="19" rx="6" fill="none" stroke="#2f3a46"/>
+        <path d="M 5.5 18.5 L 9 22 L 15.5 12.5" fill="none" stroke="#60d69d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="28" y="23" fill="#d6dde6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">Playback tools</text>
+      </g>
+    </g>
+  </g>
+</svg>
