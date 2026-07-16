@@ -2,6 +2,9 @@
   "name": "vBlockTube",
   "version": "1.9.1",
   "description": "A userscript to block YouTube ads with enhanced features.",
+  "scripts": {
+    "sync:hero-version": "node scripts/sync-hero-version.mjs"
+  },
   "keywords": [],
   "author": "vippium",
   "license": "ISC"
