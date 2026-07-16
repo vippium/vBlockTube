@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="96" viewBox="0 0 520 96" role="img" aria-labelledby="title desc">
+  <title id="title">Install script</title>
+  <desc id="desc">A modern install button for the vBlockTube userscript.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#12343e"/>
+      <stop offset="100%" stop-color="#0f2329"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#98d6d5"/>
+      <stop offset="100%" stop-color="#6fe1b4"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#041015" flood-opacity="0.42"/>
+    </filter>
+  </defs>
+
+  <rect x="80" y="10" width="360" height="76" rx="38" fill="url(#bg)" stroke="#2b4750" filter="url(#shadow)"/>
+  <circle cx="122" cy="48" r="24" fill="#1a3a23" stroke="#356343"/>
+  <path d="M 116 34 L 116 50" stroke="#7ed957" stroke-width="4.2" stroke-linecap="round"/>
+  <path d="M 122 32 L 122 50" stroke="#7ed957" stroke-width="4.2" stroke-linecap="round"/>
+  <path d="M 128 36 L 128 50" stroke="#7ed957" stroke-width="4.2" stroke-linecap="round"/>
+  <path d="M 110 50 L 134 50" stroke="#dff8c7" stroke-width="4.2" stroke-linecap="round"/>
+  <path d="M 122 50 L 122 57" stroke="#dff8c7" stroke-width="4.2" stroke-linecap="round"/>
+  <circle cx="122" cy="59" r="3" fill="#dff8c7"/>
+
+  <text x="164" y="43" fill="#f5f7fa" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="21" font-weight="700">Install from Greasyfork</text>
+  <text x="164" y="62" fill="#9db1ba" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">Open the latest vBlockTube userscript</text>
+</svg>

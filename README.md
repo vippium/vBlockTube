@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://update.greasyfork.org/scripts/557720/vBlockTube.user.js" target="_blank">
-    <img alt="Install from GreasyFork" src="https://img.shields.io/badge/Install_from_GreasyFork-100000?style=for-the-badge&logo=GreasyFork&logoColor=98D6D5&labelColor=154A56&color=98D6D5" />
+    <img alt="Install script" src="./assets/readme/install-button.svg" width="360" />
   </a>
 </p>
 
