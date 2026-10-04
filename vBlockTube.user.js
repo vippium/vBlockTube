@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         vBlockTube
 // @namespace    https://www.github.com/vippium/
-// @version      2.0.0
+// @version      2.0.1
 // @description  Blocks YouTube ads and provides enhanced features for a better viewing experience.
 // @author       vippium
 // @match        https://www.youtube.com/*
@@ -13,6 +13,7 @@
 // @connect      api.sponsor.ajay.app
 // @connect      update.greasyfork.org
 // @connect      cnv.cx
+// @connect      returnyoutubedislikeapi.com
 // @connect      googlevideo.com
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
@@ -54,9 +55,6 @@
   const disableRemovePlayerAd = false;
 
   const open_config_keyword = "2333";
-  const display_error_keyword = "2444";
-  const reset_config_keyword = "2555";
-  const custom_panel_keyword = "2666";
 
   let channel_id = GM_getValue("last_channel_id", "default");
 
@@ -256,209 +254,9 @@
 
     apply() {
       this.isDarkMode = this.shouldUseDarkMode();
+      // The settings page themes itself; remove any style left by older versions.
       const existing = unsafeWindow.document.getElementById(this.styleId);
-
-      if (!this.isDarkMode) {
-        if (existing) existing.remove();
-        return;
-      }
-
-      const darkCSS = `
-          #xxx_popup,
-          #yt-hide-buttons-popup,
-          #yt-error-popup,
-          .popup {
-            background-color: #1e1e1e !important;
-            color: #e0e0e0 !important;
-            border-color: #404040 !important;
-          }
-
-          #xxx_popup .popup-header,
-          #yt-hide-buttons-popup #yt-hide-buttons-header,
-          #yt-error-header,
-          .popup-header {
-            background-color: #2d2d2d !important;
-            color: #e0e0e0 !important;
-            border-color: #404040 !important;
-          }
-
-          #xxx_popup input[type="text"],
-          #xxx_popup input[type="number"],
-          #xxx_popup select,
-          #yt-hide-buttons-popup input[type="text"],
-          #yt-hide-buttons-popup select,
-          .popup input[type="text"],
-          .popup select {
-            background-color: #2d2d2d !important;
-            color: #e0e0e0 !important;
-            border-color: #404040 !important;
-          }
-
-          #xxx_popup input[type="checkbox"],
-          #yt-hide-buttons-popup input[type="checkbox"],
-          .popup input[type="checkbox"] {
-            accent-color: #3498db;
-          }
-
-          #xxx_popup button,
-          #yt-hide-buttons-popup button,
-          #yt-error-close,
-          #yt-vbt-settings-btn,
-          .popup button {
-            background-color: #3498db !important;
-            color: white !important;
-          }
-
-          #xxx_popup button:hover,
-          #yt-hide-buttons-popup button:hover,
-          #yt-error-close:hover,
-          #yt-vbt-settings-btn:hover,
-          .popup button:hover {
-            background-color: #2980b9 !important;
-          }
-
-          #xxx_popup .popup-content,
-          #yt-hide-buttons-popup .yt-hide-buttons-body,
-          #yt-error-body,
-          .popup-content {
-            background-color: #1e1e1e !important;
-            color: #e0e0e0 !important;
-          }
-
-          #yt-error-body {
-            color: #e0e0e0 !important;
-          }
-
-          #xxx_popup .yt-hb-section-title,
-          #xxx_popup .recommend-title,
-          #yt-error-header {
-            color: #e0e0e0 !important;
-            background-color: #2d2d2d !important;
-            border-color: #404040 !important;
-          }
-
-          #xxx_popup label,
-          #yt-hide-buttons-popup label {
-            color: #e0e0e0 !important;
-          }
-
-          #xxx_popup .popup-body,
-          #yt-hide-buttons-popup .yt-hide-buttons-body {
-            background-color: #1e1e1e !important;
-          }
-
-          #xxx_popup h1,
-          #xxx_popup .item-group {
-            color: #e0e0e0 !important;
-          }
-
-          /* Settings backup sub-popup dark mode */
-
-          #yt-vbt-backup-popup {
-            background-color: #1e1e1e !important;
-            border-color: #404040 !important;
-            color: #e0e0e0 !important;
-          }
-
-          #yt-vbt-backup-header {
-            background-color: #2d2d2d !important;
-            color: #e0e0e0 !important;
-          }
-
-          #yt-vbt-backup-body {
-            background-color: #1e1e1e !important;
-            color: #e0e0e0 !important;
-          }
-
-          #yt-vbt-backup-body button {
-            background-color: #3498db !important;
-            color: white !important;
-          }
-
-          #yt-vbt-backup-body button:hover {
-            background-color: #2980b9 !important;
-          }
-
-          #yt-vbt-backup-note {
-            color: #aaa !important;
-          }
-
-          /* Watch Page Tweaks (2666) panel dark mode */
-          #yt-hide-buttons-popup .yt-hb-row {
-            color: #e0e0e0 !important;
-          }
-
-          #yt-hide-buttons-popup .yt-hb-row label {
-            color: #e0e0e0 !important;
-          }
-
-          #yt-hide-buttons-popup .yt-hb-row.disabled label {
-            color: #666666 !important;
-          }
-
-          #yt-hide-buttons-popup .yt-hb-select-row {
-            color: #e0e0e0 !important;
-          }
-
-          #yt-hide-buttons-popup .yt-hb-select-row label {
-            color: #e0e0e0 !important;
-          }
-
-          #yt-hide-buttons-popup .yt-hb-section {
-            border-color: #404040 !important;
-            background-color: #1e1e1e !important;
-          }
-
-          #yt-hide-buttons-popup .yt-hb-section-header {
-            background-color: #2d2d2d !important;
-            color: #e0e0e0 !important;
-            border-color: #404040 !important;
-          }
-
-          #yt-hide-buttons-popup .yt-hb-caret {
-            color: #e0e0e0 !important;
-          }
-
-          #yt-hide-buttons-popup .yt-hb-section-body {
-            background-color: #1e1e1e !important;
-            color: #e0e0e0 !important;
-          }
-
-          /* Scrollbar styling for dark mode */
-          #xxx_popup::-webkit-scrollbar,
-          #yt-error-body::-webkit-scrollbar,
-          #yt-hide-buttons-popup::-webkit-scrollbar {
-            width: 8px;
-          }
-
-          #xxx_popup::-webkit-scrollbar-track,
-          #yt-error-body::-webkit-scrollbar-track,
-          #yt-hide-buttons-popup::-webkit-scrollbar-track {
-            background: #2d2d2d !important;
-          }
-
-          #xxx_popup::-webkit-scrollbar-thumb,
-          #yt-error-body::-webkit-scrollbar-thumb,
-          #yt-hide-buttons-popup::-webkit-scrollbar-thumb {
-            background: #404040 !important;
-            border-radius: 4px;
-          }
-
-          #xxx_popup::-webkit-scrollbar-thumb:hover,
-          #yt-error-body::-webkit-scrollbar-thumb:hover,
-          #yt-hide-buttons-popup::-webkit-scrollbar-thumb:hover {
-            background: #555555 !important;
-          }
-        `;
-
-      if (!existing) {
-        const style = unsafeWindow.document.createElement("style");
-        style.id = this.styleId;
-        style.textContent = darkCSS;
-        unsafeWindow.document.head.appendChild(style);
-      } else {
-        existing.textContent = darkCSS;
-      }
+      if (existing) existing.remove();
     },
 
     init() {
@@ -887,6 +685,8 @@
         init_disable_ambient_mode();
         init_disable_saturated_hover();
         init_disable_play_on_hover();
+        init_return_dislike();
+        init_settings_button();
         init_disable_end_cards();
         init_interruptions_remover();
         init_miniplayer_button();
@@ -1767,9 +1567,6 @@
             newValue.language = "en";
             user_data = newValue;
             config_api.config_init();
-            const popup_node =
-              unsafeWindow.document.getElementById("xxx_popup");
-            popup_node && display_config_win();
           },
         );
       },
@@ -2479,10 +2276,7 @@
         const oninput = function (event) {
           if (
             [
-              display_error_keyword,
               open_config_keyword,
-              reset_config_keyword,
-              custom_panel_keyword,
             ].includes(this.value)
           ) {
             setTimeout(() => {
@@ -2506,80 +2300,7 @@
                   new Event("input", { bubbles: true }),
                 );
                 closeSearchPanel();
-                display_config_win();
-              }
-              if (search_input_node.value === reset_config_keyword) {
-                search_input_node.value = "";
-                search_input_node.dispatchEvent(
-                  new Event("input", { bubbles: true }),
-                );
-                closeSearchPanel();
-                user_data_api.reset();
-                return;
-              }
-              if (search_input_node.value === display_error_keyword) {
-                search_input_node.value = "";
-                search_input_node.dispatchEvent(
-                  new Event("input", { bubbles: true }),
-                );
-                closeSearchPanel();
-                let tips = `script ${flag_info.init} ${
-                  isinint ? flag_info.success : flag_info.failed
-                }`;
-                if (error_messages.length === 0 && isinint)
-                  tips += " " + flag_info.runing_normally;
-                for (let key of Object.keys(inject_info)) {
-                  if (!mobile_web && key === "ytInitialPlayerResponse")
-                    continue;
-                  if (
-                    key === "ytInitialReelWatchSequenceResponse" &&
-                    !["yt_shorts", "mobile_yt_shorts"].includes(page_type)
-                  )
-                    continue;
-                  tips += `\n${key} ${flag_info.inject} ${
-                    inject_info[key] ? flag_info.success : flag_info.failed
-                  }`;
-                }
-
-                const tmp_user_data = JSON.parse(JSON.stringify(user_data));
-                delete tmp_user_data.shorts_list;
-                delete tmp_user_data.channel_infos;
-                tips += `\n\n${flag_info.config_info}\n${JSON.stringify(
-                  tmp_user_data,
-                  null,
-                  2,
-                )}\n\n${
-                  flag_info.page_info
-                }\npage_type: ${page_type}\nhref: ${href}`;
-                tips += `\n\nbrowser_info\n${JSON.stringify(
-                  browser_info,
-                  null,
-                  2,
-                )}`;
-                const str_channel_id = "" + channel_id;
-                tips += `\n\naccount_info\nchannel_id: ${
-                  str_channel_id === "default" || str_channel_id.length <= 10
-                    ? str_channel_id
-                    : str_channel_id.slice(0, 5) +
-                      "..." +
-                      str_channel_id.slice(-5)
-                }`;
-                if (error_messages.length !== 0) {
-                  tips += `\n\n${flag_info.exists_error}\n-----------${
-                    flag_info.err_msg
-                  }(${flag_info.ctoc})-----------------\n${error_messages.join(
-                    "\n",
-                  )}\n\n${flag_info.tips}`;
-                }
-                display_error_win(tips);
-              }
-              if (search_input_node.value === custom_panel_keyword) {
-                search_input_node.value = "";
-                search_input_node.dispatchEvent(
-                  new Event("input", { bubbles: true }),
-                );
-                closeSearchPanel();
-                display_hide_buttons_win();
+                display_settings_win("general");
               }
             }, 500);
           }
@@ -2969,1005 +2690,6 @@
     return "\n" + callstack[0].trim();
   }
 
-  /* ===== 2444 : Information Window panel ===== */
-
-  function display_error_win(msg) {
-    const css = `
-  #yt-error-popup{
-    z-index:999999999;
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    padding:0;
-    background-color:#ffffff;
-    border:1px solid #3498db;
-    border-radius:5px;
-    box-shadow:0 0 10px rgba(0,0,0,0.3);
-    width:360px;
-    max-height:80vh;
-    display:flex;
-    flex-direction:column;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-
-  #yt-error-header{
-    cursor:move;
-    user-select:none;
-    padding:4px 8px;
-    padding-right:32px;
-    background-color:#3498db;
-    color:#ffffff;
-    border-radius:4px 4px 0 0;
-    font-weight:bold;
-    font-size:13px;
-    position:relative;
-  }
-
-  #yt-error-close,#yt-vbt-settings-btn{
-    position:absolute;
-    top:50%;
-    transform:translateY(-50%);
-    cursor:pointer;
-    background-color:transparent;
-    color:#ffffff;
-    border:none;
-    padding:0;
-    width:20px;
-    height:20px;
-    border-radius:3px;
-    font-size:14px;
-    font-weight:bold;
-    line-height:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:background-color 0.2s ease;
-  }
-
-  #yt-vbt-settings-btn{
-    right:32px;
-    font-size:16px;
-  }
-
-  #yt-vbt-settings-btn:hover{
-    background-color:rgba(52,152,219,0.9);
-  }
-
-  #yt-vbt-settings-btn:active{
-    background-color:#2980b9;
-  }
-
-  #yt-error-close{
-    right:8px;
-  }
-
-  #yt-error-close:hover{
-    background-color:rgba(231,76,60,0.9);
-  }
-
-  #yt-error-close:active{
-    background-color:#c0392b;
-  }
-
-  #yt-error-body{
-    flex:1 1 auto;
-    overflow-y:auto;
-    padding:8px 10px 10px 10px;
-    white-space:pre-wrap;
-    font-size:12px;
-    color:#000;
-  }
-
-  /* Settings backup sub-popup */
-  #yt-vbt-backup-popup{
-    z-index:1000000000;
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    padding:0;
-    background-color:#ffffff;
-    border:1px solid #3498db;
-    border-radius:5px;
-    box-shadow:0 0 15px rgba(0,0,0,0.4);
-    width:280px;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-
-  #yt-vbt-backup-header{
-    cursor:move;
-    user-select:none;
-    padding:6px 10px;
-    padding-right:32px;
-    background-color:#3498db;
-    color:#ffffff;
-    border-radius:4px 4px 0 0;
-    font-weight:bold;
-    font-size:13px;
-    position:relative;
-  }
-
-  #yt-vbt-backup-close{
-    position:absolute;
-    top:50%;
-    right:8px;
-    transform:translateY(-50%);
-    cursor:pointer;
-    background-color:transparent;
-    color:#ffffff;
-    border:none;
-    padding:0;
-    width:20px;
-    height:20px;
-    border-radius:3px;
-    font-size:16px;
-    font-weight:bold;
-    line-height:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:background-color 0.2s ease;
-  }
-
-  #yt-vbt-backup-close:hover{
-    background-color:rgba(231,76,60,0.9);
-  }
-
-  #yt-vbt-backup-body{
-    padding:14px 14px 16px 14px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-
-  .yt-vbt-backup-btn{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:8px 12px;
-    border:none;
-    border-radius:5px;
-    cursor:pointer;
-    font-size:13px;
-    font-weight:600;
-    width:100%;
-    background-color:#3498db;
-    color:#ffffff;
-    transition:background-color 0.2s ease;
-  }
-
-  .yt-vbt-backup-btn:hover{
-    background-color:#2980b9;
-  }
-
-  .yt-vbt-backup-btn:active{
-    background-color:#2471a3;
-  }
-
-  #yt-vbt-backup-note{
-    font-size:11px;
-    color:#888;
-    text-align:center;
-    margin-top:2px;
-  }
-  `;
-    if (!unsafeWindow.document.getElementById("yt-error-style")) {
-      const style = unsafeWindow.document.createElement("style");
-      style.id = "yt-error-style";
-      style.textContent = css;
-      unsafeWindow.document.head.appendChild(style);
-    }
-
-    const old = unsafeWindow.document.getElementById("yt-error-popup");
-    if (old) old.remove();
-
-    const popup = unsafeWindow.document.createElement("div");
-    popup.id = "yt-error-popup";
-
-    const header = unsafeWindow.document.createElement("div");
-    header.id = "yt-error-header";
-    header.textContent = "Information (message)";
-
-    const settingsBtn = unsafeWindow.document.createElement("button");
-    settingsBtn.id = "yt-vbt-settings-btn";
-    settingsBtn.innerHTML = "⚙";
-    settingsBtn.title = "Export / Import settings";
-    header.appendChild(settingsBtn);
-
-    const closeBtn = unsafeWindow.document.createElement("button");
-    closeBtn.id = "yt-error-close";
-    closeBtn.innerHTML = "X";
-    closeBtn.title = "Close";
-    header.appendChild(closeBtn);
-
-    const body = unsafeWindow.document.createElement("div");
-    body.id = "yt-error-body";
-    body.textContent = msg;
-
-    popup.append(header, body);
-    unsafeWindow.document.body.appendChild(popup);
-
-    function close() {
-      popup.remove();
-      const bp = unsafeWindow.document.getElementById("yt-vbt-backup-popup");
-      if (bp) bp.remove();
-    }
-
-    closeBtn.addEventListener("click", close);
-
-    settingsBtn.addEventListener("click", () => {
-      // Toggle: close if already open
-      const existing = unsafeWindow.document.getElementById("yt-vbt-backup-popup");
-      if (existing) { existing.remove(); return; }
-
-      const bp = unsafeWindow.document.createElement("div");
-      bp.id = "yt-vbt-backup-popup";
-
-      const bh = unsafeWindow.document.createElement("div");
-      bh.id = "yt-vbt-backup-header";
-      bh.textContent = "Settings Backup";
-
-      const bc = unsafeWindow.document.createElement("button");
-      bc.id = "yt-vbt-backup-close";
-      bc.innerHTML = "X";
-      bc.title = "Close";
-      bh.appendChild(bc);
-
-      const bb = unsafeWindow.document.createElement("div");
-      bb.id = "yt-vbt-backup-body";
-
-      const exportBtn = unsafeWindow.document.createElement("button");
-      exportBtn.className = "yt-vbt-backup-btn";
-      exportBtn.innerHTML = "⬇ Export settings";
-      exportBtn.addEventListener("click", () => {
-        try {
-          const exportData = JSON.parse(JSON.stringify(user_data));
-          delete exportData.shorts_list;
-          delete exportData.channel_infos;
-          delete exportData.login;
-          const blob = new Blob(
-            [JSON.stringify(exportData, null, 2)],
-            { type: "application/json" }
-          );
-          const url = URL.createObjectURL(blob);
-          const a = unsafeWindow.document.createElement("a");
-          a.href = url;
-          a.download = "vBlockTube-settings.vbt";
-          a.click();
-          URL.revokeObjectURL(url);
-        } catch (e) {
-          alert("Export failed: " + e.message);
-        }
-      });
-
-      const importBtn = unsafeWindow.document.createElement("button");
-      importBtn.className = "yt-vbt-backup-btn";
-      importBtn.innerHTML = "⬆ Import Settings";
-      importBtn.addEventListener("click", () => {
-        const fileInput = unsafeWindow.document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = ".vbt";
-        fileInput.style.display = "none";
-        unsafeWindow.document.body.appendChild(fileInput);
-        fileInput.addEventListener("change", () => {
-          const file = fileInput.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            try {
-              const imported = JSON.parse(e.target.result);
-              if (typeof imported !== "object" || imported === null) {
-                throw new Error("Invalid settings file.");
-              }
-              const preserved = {
-                shorts_list: user_data.shorts_list,
-                channel_infos: user_data.channel_infos,
-                login: user_data.login,
-                language: user_data.language,
-              };
-              Object.assign(user_data, imported, preserved);
-              user_data_api.set();
-              alert("Settings imported successfully. The page will now reload.");
-              unsafeWindow.location.reload();
-            } catch (err) {
-              alert("Import failed: " + err.message);
-            } finally {
-              fileInput.remove();
-            }
-          };
-          reader.readAsText(file);
-        });
-        fileInput.click();
-      });
-
-      const note = unsafeWindow.document.createElement("div");
-      note.id = "yt-vbt-backup-note";
-
-      bb.append(exportBtn, importBtn, note);
-      bp.append(bh, bb);
-      unsafeWindow.document.body.appendChild(bp);
-
-      bc.addEventListener("click", () => bp.remove());
-      make_popup_draggable(bp, bh);
-    });
-
-    make_popup_draggable(popup, header);
-  }
-
-  /* =============== MAIN 2333 CONFIG PANEL =============== */
-
-  function display_config_win() {
-    const css_str = `
-  .popup{
-    z-index:999999999;
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    padding:0;
-    background-color:#ffffff;
-    border:1px solid #3498db;
-    border-radius:5px;
-    box-shadow:0 0 10px rgba(0,0,0,0.3);
-    width:260px;
-    max-height:80vh;
-    display:flex;
-    flex-direction:column;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-
-  .popup-header{
-    cursor:move;
-    user-select:none;
-    padding:4px 8px;
-    padding-right:32px;
-    background-color:#3498db;
-    color:#ffffff;
-    border-radius:4px 4px 0 0;
-    font-weight:bold;
-    font-size:13px;
-    text-align:left;
-    position:relative;
-  }
-
-  .popup-close-button{
-    position:absolute;
-    top:50%;
-    right:8px;
-    transform:translateY(-50%);
-    cursor:pointer;
-    background-color:transparent;
-    color:#ffffff;
-    border:none;
-    padding:0;
-    width:20px;
-    height:20px;
-    border-radius:3px;
-    font-size:16px;
-    font-weight:bold;
-    line-height:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:background-color 0.2s ease;
-  }
-
-  .popup-close-button:hover{
-    background-color:rgba(231,76,60,0.9);
-  }
-
-  .popup-close-button:active{
-    background-color:#c0392b;
-  }
-
-  .popup-body{
-    flex:1 1 auto;
-    overflow-y:auto;
-    padding:6px 8px 8px 8px;
-  }
-
-  .btn{
-    cursor:pointer;
-    background-color:#3498db;
-    color:#ffffff;
-    border:none;
-    padding:5px 10px;
-    margin:0 auto;
-    border-radius:5px;
-    display:block;
-    margin-top:10px;
-  }
-
-  .recommend-title{
-    user-select:none;
-    font-weight:bold;
-    font-size:13px;
-    background-color:#f3f6fb;
-    color:#333333;
-    border:none;
-    padding:5px 8px;
-    border-radius:4px;
-    width:auto;
-    text-align:start;
-    margin-bottom:4px;
-  }
-
-  .select-group{
-    cursor:pointer;
-    padding:4px 0 6px 0;
-    list-style-type:none;
-    margin:0;
-    padding-left:0;
-    user-select:none;
-  }
-
-  .item-group{
-    list-style-type:none;
-    margin:0;
-    padding-left:0;
-  }
-
-  .popup h1{
-    margin:4px 0;
-  }
-
-  label{
-    font-size:13px;
-  }
-  `;
-    const style = unsafeWindow.document.createElement("style");
-    style.textContent = css_str;
-    $("body").appendChild(style);
-
-    let win_config;
-    const home_watch_config = {
-      recommend_btn: [
-        {
-          id: "open_recommend_shorts",
-          title: "btn_recommend_shorts",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-            {
-              tag: "btn_lable_subscribed",
-              value: "subscribed",
-              tips: "recommend_subscribed_lable_tips",
-              condition: {
-                login_status: true,
-              },
-            },
-          ],
-        },
-        {
-          id: "open_recommend_liveroom",
-          title: "btn_recommend_liveroom",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-            {
-              tag: "btn_lable_subscribed",
-              value: "subscribed",
-              tips: "recommend_subscribed_lable_tips",
-              condition: {
-                login_status: true,
-              },
-            },
-          ],
-        },
-        {
-          id: "open_recommend_movie",
-          title: "btn_recommend_movie",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "open_recommend_popular",
-          title: "btn_recommend_popular",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "open_recommend_playables",
-          title: "btn_recommend_game",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "restore_related_sidebar_layout",
-          title: "Restore Related Sidebar Layout",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-      ],
-    };
-    const shorts_config = {
-      recommend_btn: [
-        {
-          id: "add_shorts_upload_date",
-          title: "title_add_shorts_upload_date",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "shorts_change_author_name",
-          title: "title_shorts_change_author_name",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "short_buy_super_thanks",
-          title: "short_buy_super_thanks",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "shorts_disable_loop_play",
-          title: "bt_shorts_disable_loop_play_title",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "shorts_auto_scroll",
-          title: "btn_shorts_auto_scroll_title",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "shorts_add_video_progress",
-          title: "btn_shorts_add_video_progress_title",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "shorts_dbclick_like",
-          title: "btn_shorts_dbclick_like_title",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-      ],
-    };
-
-    const common_config = {
-      recommend_btn: [
-        {
-          id: "sponsorblock",
-          title: "btn_sponsorblock_title",
-          tips: "btn_sponsorblock_tips",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "dark_mode",
-          title: "Dark Mode",
-          items: [
-            {
-              tag: "Auto",
-              value: "auto",
-            },
-            {
-              tag: "On",
-              value: "on",
-            },
-            {
-              tag: "Off",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "global_shorts_block",
-          title: "Block all Shorts",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "disable_saturated_hover",
-          title: "Disable Saturated Hover",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "disable_play_on_hover",
-          title: "Disable Play on Hover",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-      ],
-    };
-
-    const music_config = {
-      recommend_btn: [
-        {
-          id: "sponsorblock",
-          title: "btn_sponsorblock_title",
-          tips: "btn_sponsorblock_tips",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-        {
-          id: "duplicate_song_prevention",
-          title: "btn_duplicate_song_prevention_title",
-          tips: "btn_duplicate_song_prevention_tips",
-          items: [
-            {
-              tag: "btn_lable_open",
-              value: "on",
-            },
-            {
-              tag: "btn_lable_close",
-              value: "off",
-            },
-          ],
-        },
-      ],
-    };
-
-    if (
-      ["mobile_yt_home_searching", "mobile_yt_watch_searching"].includes(
-        page_type,
-      )
-    ) {
-      home_watch_config.recommend_btn.push({
-        split_line: true,
-        title: "shorts_recommend_split_tag",
-      });
-      home_watch_config.recommend_btn.push(...shorts_config.recommend_btn);
-    }
-    [
-      "yt_home",
-      "yt_watch",
-      "yt_search",
-      "mobile_yt_search",
-      "mobile_yt_watch_searching",
-      "mobile_yt_home_searching",
-      "yt_watch_playlist",
-      "other",
-    ].includes(page_type) && (win_config = home_watch_config);
-    ["yt_shorts"].includes(page_type) && (win_config = shorts_config);
-
-    // YouTube Music config panel config
-    if (["yt_music_home", "yt_music_watch"].includes(page_type)) {
-      win_config = music_config;
-    } else {
-      win_config &&
-        win_config.recommend_btn.push(...common_config.recommend_btn);
-    }
-
-    if (!win_config) return;
-    const popup_node = unsafeWindow.document.getElementById("xxx_popup");
-    if (popup_node) {
-      popup_node.remove_popup_listener("rm");
-    }
-
-    const popup = unsafeWindow.document.createElement("div");
-    popup.id = "xxx_popup";
-    popup.className = "popup";
-
-    const header = unsafeWindow.document.createElement("div");
-    header.className = "popup-header";
-    header.textContent = flag_info.config_info || "Script Settings";
-
-    const closeButton = unsafeWindow.document.createElement("button");
-    closeButton.className = "popup-close-button";
-    closeButton.innerHTML = "×";
-    closeButton.title = "Close";
-    header.appendChild(closeButton);
-
-    const body = unsafeWindow.document.createElement("div");
-    body.className = "popup-body";
-
-    const item_groups = [];
-    const item_group = unsafeWindow.document.createElement("ul");
-    item_group.className = "item-group";
-    win_config.recommend_btn.forEach((recommend_item_info) => {
-      if (recommend_item_info.split_line) {
-        let p = unsafeWindow.document.createElement("h1");
-        p.style.fontSize = "large";
-        p.style.textAlign = "center";
-        p.style.color = "red";
-        p.style.padding = "20px 20px";
-        p.style.fontWeight = "bold";
-        p.innerText =
-          flag_info[recommend_item_info.title] || recommend_item_info.title;
-        item_groups.push(p);
-        return;
-      }
-      const recommend_id = recommend_item_info.id;
-      const recommend_title =
-        flag_info[recommend_item_info.title] || recommend_item_info.title;
-      const recommend_tips =
-        recommend_item_info.tips && flag_info[recommend_item_info.tips];
-      const select_item_infos = recommend_item_info.items || [];
-      const select_items = [];
-      const item = unsafeWindow.document.createElement("li");
-      const select_group = unsafeWindow.document.createElement("ul");
-      select_group.className = "select-group";
-      select_group.id = recommend_id;
-      select_item_infos.forEach((select_item_info) => {
-        const tag = flag_info[select_item_info.tag] || select_item_info.tag;
-        const value = select_item_info.value;
-        const tips = select_item_info.tips && flag_info[select_item_info.tips];
-        const condition = select_item_info.condition;
-        const select_item = unsafeWindow.document.createElement("li");
-        const input = unsafeWindow.document.createElement("input");
-        input.type = "radio";
-        input.name = recommend_id + "_option";
-        input.id = recommend_id + "_" + value;
-        input.value = value;
-        if (condition && condition.login_status) {
-          if (condition.login_status !== user_data.login) {
-            input.disabled = true;
-          }
-        }
-        if (user_data[recommend_id] === value) {
-          input.checked = true;
-        }
-        input.addEventListener("click", () => {
-          handle_recommend_radio(input);
-        });
-        const label = unsafeWindow.document.createElement("label");
-        label.htmlFor = input.id;
-        label.innerText = tag;
-        tips && (label.title = tips);
-        select_item.append(input, label);
-        select_items.push(select_item);
-      });
-      const recommend_title_div = unsafeWindow.document.createElement("div");
-      recommend_title_div.className = "recommend-title";
-      recommend_title_div.innerText = recommend_title;
-      recommend_tips && (recommend_title_div.title = recommend_tips);
-      select_group.append(...select_items);
-      item.append(recommend_title_div, select_group);
-      item_groups.push(item);
-    });
-    item_group.append(...item_groups);
-
-    body.appendChild(item_group);
-    popup.append(header, body);
-    unsafeWindow.document.body.append(popup);
-
-    function remove_popup_hander(event) {
-      if (
-        (event && event.target && !popup.contains(event.target)) ||
-        (event && event.target === closeButton) ||
-        event === "rm"
-      ) {
-        popup.remove();
-        unsafeWindow.document.removeEventListener("click", remove_popup_hander);
-        if (
-          ["mobile_yt_watch_searching", "mobile_yt_home_searching"].includes(
-            page_type,
-          )
-        ) {
-          history.back();
-        }
-      }
-    }
-
-    popup.remove_popup_listener = remove_popup_hander;
-    unsafeWindow.document.addEventListener("click", remove_popup_hander);
-    closeButton.addEventListener("click", remove_popup_hander);
-
-    make_popup_draggable(popup, header, "pos_2333");
-
-    return;
-  }
-
-  function make_popup_draggable(popup, handle, posKey) {
-    let isDown = false;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    if (posKey) {
-      const saved = user_data.popup_positions?.[posKey];
-      if (saved) {
-        popup.style.transform = "none";
-        popup.style.top = saved.top;
-        popup.style.left = saved.left;
-      }
-    }
-
-    const cleanup = () => {
-      unsafeWindow.document.removeEventListener("mousemove", onMouseMove);
-      unsafeWindow.document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    const onMouseMove = (e) => {
-      if (!unsafeWindow.document.contains(popup)) { cleanup(); return; }
-      if (!isDown) return;
-      const x = e.clientX - offsetX;
-      const y = e.clientY - offsetY;
-      popup.style.left = x + "px";
-      popup.style.top = y + "px";
-    };
-
-    const onMouseUp = () => {
-      if (!unsafeWindow.document.contains(popup)) { cleanup(); return; }
-      if (!isDown) return;
-      isDown = false;
-      if (posKey) {
-        if (!user_data.popup_positions) user_data.popup_positions = {};
-        user_data.popup_positions[posKey] = {
-          top: popup.style.top,
-          left: popup.style.left,
-        };
-        user_data_api.set();
-      }
-    };
-
-    handle.addEventListener("mousedown", (e) => {
-      if (e.button !== 0) return;
-      isDown = true;
-
-      const rect = popup.getBoundingClientRect();
-      popup.style.transform = "none";
-      popup.style.top = rect.top + "px";
-      popup.style.left = rect.left + "px";
-
-      offsetX = e.clientX - rect.left;
-      offsetY = e.clientY - rect.top;
-
-      e.preventDefault();
-    });
-
-    unsafeWindow.document.addEventListener("mousemove", onMouseMove);
-    unsafeWindow.document.addEventListener("mouseup", onMouseUp);
-  }
-
-  function handle_recommend_radio(input_obj) {
-    const setting_id = input_obj.parentNode.parentNode.id;
-    user_data[setting_id] = input_obj.value;
-    user_data_api.set();
-
-    // Apply dark mode if setting changed
-    if (setting_id === "dark_mode") {
-      darkModeSystem.apply();
-    }
-
-    config_api.config_init(user_data.language);
-  }
-
   function init_disable_saturated_hover() {
     const styleId = "no-saturated-hover-style";
 
@@ -4053,6 +2775,20 @@ yt-touch-feedback-shape,
   border-color:transparent !important;
   opacity:0 !important;
   pointer-events:none !important;
+}
+
+/* 3-dot "More actions" button on video cards (related sidebar, grid, search):
+   remove its background circle / backdrop blur */
+.ytLockupMetadataViewModelMenuButton button-view-model,
+.ytLockupMetadataViewModelMenuButton button,
+.ytLockupMetadataViewModelMenuButton .ytSpecButtonShapeNextHost,
+.ytLockupMetadataViewModelMenuButton .ytSpecButtonShapeNextIcon,
+.ytLockupMetadataViewModelMenuButton .ytSpecButtonShapeNextElevatedContent {
+  background:transparent !important;
+  background-color:transparent !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  box-shadow:none !important;
 }
 
 ytd-rich-item-renderer.ytd-rich-item-renderer-highlight {
@@ -4160,6 +2896,161 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     unsafeWindow.__yt_saturated_hover_listeners = [navListener, darkListener];
   }
 
+
+  // Return YouTube Dislike (always on, read-only): shows the estimated dislike count
+  // BEFORE the thumbs-down icon, inside the dislike button.
+  // Data: https://returnyoutubedislikeapi.com (attribution: returnyoutubedislike.com)
+  function init_return_dislike() {
+    const STYLE_ID = "vbt-ryd-style";
+    const API = "https://returnyoutubedislikeapi.com/votes?videoId=";
+    const CACHE_TTL = 10 * 60 * 1000;
+    const doc = unsafeWindow.document;
+    const st = (unsafeWindow.__vbt_ryd = unsafeWindow.__vbt_ryd || {
+      cache: new Map(),
+      pending: new Set(),
+      blockedUntil: 0,
+      observer: null,
+      navListener: null,
+      raf: 0,
+      gen: 0,
+    });
+    const gen = ++st.gen;
+
+    if (st.observer) {
+      st.observer.disconnect();
+      st.observer = null;
+    }
+    if (st.navListener) {
+      unsafeWindow.removeEventListener("yt-navigate-finish", st.navListener);
+      st.navListener = null;
+    }
+    if (st.raf) {
+      cancelAnimationFrame(st.raf);
+      st.raf = 0;
+    }
+    const removeAll = () => {
+      doc.getElementById(STYLE_ID)?.remove();
+      doc.querySelectorAll(".vbt-ryd-count").forEach((n) => n.remove());
+      doc.querySelectorAll(".vbt-ryd-on").forEach((n) => n.classList.remove("vbt-ryd-on"));
+    };
+    removeAll();
+
+    const style = doc.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
+      button.vbt-ryd-on {
+        display: inline-flex !important;
+        align-items: center !important;
+        width: auto !important;
+        min-width: 0 !important;
+        gap: 6px !important;
+        padding-inline: 16px 12px !important;
+      }
+      .vbt-ryd-count { margin: 0 !important; }
+    `;
+    (doc.head || doc.documentElement).appendChild(style);
+
+    const fmt = (n) => {
+      if (n < 1000) return String(n);
+      try {
+        return new Intl.NumberFormat(doc.documentElement.lang || "en", {
+          notation: "compact",
+          maximumSignificantDigits: 2,
+        }).format(n);
+      } catch (e) {
+        return String(n);
+      }
+    };
+
+    const schedule = () => {
+      if (!st.raf) st.raf = requestAnimationFrame(ensure);
+    };
+
+    const fetchVotes = (id) => {
+      if (st.pending.has(id) || Date.now() < st.blockedUntil) return;
+      st.pending.add(id);
+      const fail = () => {
+        st.pending.delete(id);
+        // short negative cache (30s) so we don't retry on every DOM mutation
+        st.cache.set(id, { dislikes: null, t: Date.now() - CACHE_TTL + 30000 });
+      };
+      GM_xmlhttpRequest({
+        method: "GET",
+        url: API + encodeURIComponent(id),
+        headers: { Accept: "application/json" },
+        timeout: 10000,
+        onload: (res) => {
+          st.pending.delete(id);
+          if (res.status === 429) {
+            st.blockedUntil = Date.now() + 60000; // back off as the API asks
+            return;
+          }
+          let dislikes = null;
+          if (res.status === 200) {
+            try {
+              const d = JSON.parse(res.responseText);
+              if (typeof d.dislikes === "number" && !d.deleted) dislikes = d.dislikes;
+            } catch (e) {}
+          }
+          if (st.cache.size > 200) st.cache.delete(st.cache.keys().next().value);
+          st.cache.set(id, { dislikes, t: Date.now() });
+          if (st.gen === gen) schedule();
+        },
+        onerror: fail,
+        ontimeout: fail,
+      });
+    };
+
+    function ensure() {
+      st.raf = 0;
+      if (st.gen !== gen) return;
+      const btn =
+        doc.querySelector("ytd-watch-metadata dislike-button-view-model button") ||
+        doc.querySelector("dislike-button-view-model button");
+      const existing = btn && btn.querySelector(".vbt-ryd-count");
+      const remove = () => {
+        if (existing) existing.remove();
+        if (btn) btn.classList.remove("vbt-ryd-on");
+      };
+      if (!btn || unsafeWindow.location.pathname !== "/watch") return remove();
+      const id = new URLSearchParams(unsafeWindow.location.search).get("v");
+      if (!id) return remove();
+
+      let entry = st.cache.get(id);
+      if (entry && Date.now() - entry.t > CACHE_TTL) {
+        st.cache.delete(id);
+        entry = null;
+      }
+      if (!entry) {
+        // never show a previous video's number while the new one loads
+        if (existing && existing.dataset.vid !== id) remove();
+        fetchVotes(id);
+        return;
+      }
+      if (entry.dislikes == null) return remove();
+
+      const text = fmt(entry.dislikes);
+      if (existing && existing.dataset.vid === id) {
+        if (existing.textContent !== text) existing.textContent = text;
+        return;
+      }
+      if (existing) existing.remove();
+      const el = doc.createElement("div");
+      el.className =
+        "ytSpecButtonShapeNextButtonTextContent ytSpecButtonShapeNextElevatedContent vbt-ryd-count";
+      el.dataset.vid = id;
+      el.textContent = text;
+      el.title = "Estimated dislikes - returnyoutubedislike.com";
+      btn.insertBefore(el, btn.firstElementChild); // before the thumbs-down icon
+      btn.classList.add("vbt-ryd-on");
+    }
+
+    st.navListener = schedule;
+    unsafeWindow.addEventListener("yt-navigate-finish", st.navListener, { passive: true });
+    st.observer = new MutationObserver(schedule);
+    st.observer.observe(doc.documentElement, { childList: true, subtree: true });
+    schedule();
+  }
 
   function init_disable_play_on_hover() {
     const styleId = "disable-play-on-hover-style";
@@ -5672,7 +4563,7 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
           hide_paid_promotion: "off",
           show_full_video_title: "off",
           hide_grid_avatar: "off",
-          hide_views_icon: "off",
+          hide_views: "off",
           hide_thumbnail_badges: "off",
           disable_saturated_hover: "off",
           old_player_ui: "off",
@@ -5693,7 +4584,6 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
           grid_content_per_row: 3,
           grid_news_per_row: 3,
           grid_shorts_per_row: 3,
-          fix_ghost_cards: "on",
         };
         let diff = false;
         user_data_listener.set();
@@ -7432,13 +6322,10 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
   function gridUpdatePageLayout() {
     // Only show one row's worth of loading placeholders (ghost cards) - see ghostFix below
     const ghostRowLimit = (parseInt(user_data.grid_content_per_row, 10) || 3) + 1;
-    const ghostRule =
-      user_data.fix_ghost_cards === "on"
-        ? `
+    const ghostRule = `
       ytd-browse:is([page-subtype="home"], [page-subtype="subscriptions"]) .ghost-card:nth-child(n+${ghostRowLimit}) {
         display: none;
-      }`
-        : "";
+      }`;
     gridDynamicStyle.textContent = `
       ytd-rich-grid-renderer {
         --ytd-rich-grid-items-per-row: ${user_data.grid_content_per_row} !important;
@@ -7595,7 +6482,8 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     let navToken = 0;
     let scanTimer = null;
 
-    const isEnabled = () => user_data.fix_ghost_cards === "on";
+    // Always on: this is a fix, not a user preference.
+    const isEnabled = () => true;
     const perRow = () => Math.max(1, parseInt(user_data.grid_content_per_row, 10) || 3);
     const isGridPage = () => {
       const p = unsafeWindow.location.pathname;
@@ -7773,7 +6661,813 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
 
   ghostFix.init();
 
-  /* ====== 2666 WATCH PAGE ELEMENTS HIDER PANEL ====== */
+  /* ====== UNIFIED SETTINGS PAGE (General / Watch Page / Player) ====== */
+
+  /* ====== DIAGNOSTICS / BACKUP HELPERS (Settings -> Advanced) ====== */
+
+  function vbt_mask_channel_id() {
+    const s = "" + channel_id;
+    return s === "default" || s.length <= 10 ? s : s.slice(0, 5) + "..." + s.slice(-5);
+  }
+
+  function vbt_status_text() {
+    if (!isinint) return "Initialization failed";
+    return error_messages.length === 0
+      ? "Running normally"
+      : "Running with " + error_messages.length + " error(s)";
+  }
+
+  function vbt_diagnostics_text() {
+    let tips = `script ${flag_info.init} ${isinint ? flag_info.success : flag_info.failed}`;
+    if (error_messages.length === 0 && isinint) tips += " " + flag_info.runing_normally;
+    for (let key of Object.keys(inject_info)) {
+      if (!mobile_web && key === "ytInitialPlayerResponse") continue;
+      if (
+        key === "ytInitialReelWatchSequenceResponse" &&
+        !["yt_shorts", "mobile_yt_shorts"].includes(page_type)
+      )
+        continue;
+      tips += `\n${key} ${flag_info.inject} ${inject_info[key] ? flag_info.success : flag_info.failed}`;
+    }
+    const tmp_user_data = JSON.parse(JSON.stringify(user_data));
+    delete tmp_user_data.shorts_list;
+    delete tmp_user_data.channel_infos;
+    tips += `\n\n${flag_info.config_info}\n${JSON.stringify(tmp_user_data, null, 2)}\n\n${flag_info.page_info}\npage_type: ${page_type}\nhref: ${href}`;
+    tips += `\n\nbrowser_info\n${JSON.stringify(browser_info, null, 2)}`;
+    tips += `\n\naccount_info\nchannel_id: ${vbt_mask_channel_id()}`;
+    if (error_messages.length !== 0) {
+      tips += `\n\n${flag_info.exists_error}\n-----------${flag_info.err_msg}(${flag_info.ctoc})-----------------\n${error_messages.join("\n")}\n\n${flag_info.tips}`;
+    }
+    return tips;
+  }
+
+  function vbt_copy_text(text) {
+    try {
+      GM_setClipboard(text, "text");
+      return true;
+    } catch (e) {
+      try {
+        unsafeWindow.navigator.clipboard.writeText(text);
+        return true;
+      } catch (e2) {
+        return false;
+      }
+    }
+  }
+
+  function vbt_export_settings() {
+    try {
+      const exportData = JSON.parse(JSON.stringify(user_data));
+      delete exportData.shorts_list;
+      delete exportData.channel_infos;
+      delete exportData.login;
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = unsafeWindow.document.createElement("a");
+      a.href = url;
+      a.download = "vBlockTube-settings.vbt";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + e.message);
+    }
+  }
+
+  function vbt_import_settings() {
+    const fileInput = unsafeWindow.document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".vbt";
+    fileInput.style.display = "none";
+    unsafeWindow.document.body.appendChild(fileInput);
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (typeof imported !== "object" || imported === null) {
+            throw new Error("Invalid settings file.");
+          }
+          const preserved = {
+            shorts_list: user_data.shorts_list,
+            channel_infos: user_data.channel_infos,
+            login: user_data.login,
+            language: user_data.language,
+          };
+          Object.assign(user_data, imported, preserved);
+          user_data_api.set();
+          alert("Settings imported successfully. The page will now reload.");
+          unsafeWindow.location.reload();
+        } catch (err) {
+          alert("Import failed: " + err.message);
+        } finally {
+          fileInput.remove();
+        }
+      };
+      reader.readAsText(file);
+    });
+    fileInput.click();
+  }
+
+  const VBT_SETTINGS_ID = "vbt-settings";
+
+  // True when YouTube itself is currently rendered dark (checks the real
+  // background colour, so it also works with forced / extension dark themes).
+  function vbt_page_is_dark() {
+    const d = unsafeWindow.document;
+    if (d.documentElement.hasAttribute("dark")) return true;
+    const parse = (c) => {
+      const m = c && c.match(/rgba?\(([^)]+)\)/);
+      if (!m) return null;
+      const p = m[1].split(",").map(parseFloat);
+      if (p.length === 4 && p[3] === 0) return null;
+      return p;
+    };
+    const candidates = [
+      d.querySelector("ytd-masthead #container"),
+      d.querySelector("ytd-masthead"),
+      d.body,
+      d.documentElement,
+    ];
+    for (const el of candidates) {
+      if (!el) continue;
+      const p = parse(unsafeWindow.getComputedStyle(el).backgroundColor);
+      if (p) return 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2] < 128;
+    }
+    return false;
+  }
+
+  // Panel follows the script's Dark mode setting (On / Off / Auto).
+  function vbt_settings_theme() {
+    const m = user_data.dark_mode;
+    if (m === "on") return "dark";
+    if (m === "off") return "light";
+    return vbt_page_is_dark() || darkModeSystem.getSystemPreference()
+      ? "dark"
+      : "light";
+  }
+
+  function display_settings_win(initialTab) {
+    const doc = unsafeWindow.document;
+    doc.getElementById(VBT_SETTINGS_ID)?.remove();
+    doc.getElementById(VBT_SETTINGS_ID + "-style")?.remove();
+
+    const css = `
+#vbt-settings{--vbt-bg:#ffffff;--vbt-fg:#0f0f0f;--vbt-muted:#606060;--vbt-line:rgba(0,0,0,.12);--vbt-chip:rgba(0,0,0,.06);--vbt-chip-active:rgba(0,0,0,.12);--vbt-accent:#065fd4;--vbt-accent-fg:#ffffff;--vbt-field:#ffffff;color-scheme:light;}
+#vbt-settings[data-theme="dark"]{--vbt-bg:#212121;--vbt-fg:#f1f1f1;--vbt-muted:#aaaaaa;--vbt-line:rgba(255,255,255,.16);--vbt-chip:rgba(255,255,255,.08);--vbt-chip-active:rgba(255,255,255,.16);--vbt-accent:#3ea6ff;--vbt-accent-fg:#0f0f0f;--vbt-field:#2d2d2d;color-scheme:dark;}
+#vbt-settings{position:fixed;inset:0;z-index:999999999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);font-family:"Roboto","Segoe UI",system-ui,-apple-system,sans-serif;}
+#vbt-settings *{box-sizing:border-box;}
+#vbt-settings .vbt-s-dialog{display:flex;flex-direction:column;width:min(780px,94vw);height:min(640px,88vh);background:var(--vbt-bg);color:var(--vbt-fg);border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,.4);overflow:hidden;}
+#vbt-settings .vbt-s-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 14px 22px;border-bottom:1px solid var(--vbt-line);}
+#vbt-settings .vbt-s-head h2{margin:0;font-size:18px;font-weight:600;}
+#vbt-settings .vbt-s-head small{margin-left:8px;font-size:12px;font-weight:400;color:var(--vbt-muted);}
+#vbt-settings .vbt-s-close{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:inherit;font-size:22px;line-height:1;cursor:pointer;}
+#vbt-settings .vbt-s-close:hover{background:var(--vbt-chip);}
+#vbt-settings .vbt-s-main{display:flex;flex:1;min-height:0;}
+#vbt-settings .vbt-s-nav{width:190px;flex:none;padding:12px 10px;border-right:1px solid var(--vbt-line);display:flex;flex-direction:column;gap:4px;}
+#vbt-settings .vbt-s-tab{display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:14px;text-align:left;cursor:pointer;}
+#vbt-settings .vbt-s-tab:hover{background:var(--vbt-chip);}
+#vbt-settings .vbt-s-tab.active{background:var(--vbt-chip-active);font-weight:600;}
+#vbt-settings .vbt-s-tab svg{width:20px;height:20px;fill:currentColor;flex:none;}
+#vbt-settings .vbt-s-content{flex:1;overflow-y:auto;padding:0 26px 24px;}
+#vbt-settings .vbt-s-page{display:none;}
+#vbt-settings .vbt-s-page.active{display:block;}
+#vbt-settings .vbt-s-section{margin-top:22px;}
+#vbt-settings .vbt-s-section h3{margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--vbt-muted);}
+#vbt-settings .vbt-s-row{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;padding:10px 0;border-bottom:1px solid var(--vbt-line);}
+#vbt-settings .vbt-s-row:last-child{border-bottom:0;}
+#vbt-settings label.vbt-s-row{cursor:pointer;}
+#vbt-settings .vbt-s-title{font-size:14px;line-height:1.3;}
+#vbt-settings .vbt-s-desc{margin-top:2px;font-size:12px;line-height:1.35;color:var(--vbt-muted);}
+#vbt-settings .vbt-s-switch{position:relative;width:40px;height:22px;flex:none;}
+#vbt-settings .vbt-s-switch input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:1;}
+#vbt-settings .vbt-s-switch i{position:absolute;inset:0;border-radius:11px;background:rgba(128,128,128,.45);transition:background .18s;pointer-events:none;}
+#vbt-settings .vbt-s-switch i::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .18s;}
+#vbt-settings .vbt-s-switch input:checked + i{background:var(--vbt-accent);}
+#vbt-settings .vbt-s-switch input:checked + i::after{transform:translateX(18px);}
+#vbt-settings .vbt-s-switch input:focus-visible + i{outline:2px solid var(--vbt-accent);outline-offset:2px;}
+#vbt-settings .vbt-s-row.disabled{opacity:.45;pointer-events:none;}
+#vbt-settings .vbt-s-seg{display:inline-flex;flex:none;border:1px solid var(--vbt-line);border-radius:10px;overflow:hidden;}
+#vbt-settings .vbt-s-seg button{border:0;background:transparent;color:inherit;font:inherit;font-size:13px;padding:6px 12px;cursor:pointer;}
+#vbt-settings .vbt-s-seg button + button{border-left:1px solid var(--vbt-line);}
+#vbt-settings .vbt-s-seg button.on{background:var(--vbt-accent);color:var(--vbt-accent-fg);}
+#vbt-settings .vbt-s-seg button:disabled{opacity:.4;cursor:not-allowed;}
+#vbt-settings .vbt-s-select{flex:none;min-width:130px;padding:7px 10px;border-radius:8px;border:1px solid var(--vbt-line);background:var(--vbt-field);color:inherit;font:inherit;font-size:13px;}
+#vbt-settings .vbt-s-btn{flex:none;padding:8px 16px;border:0;border-radius:18px;background:#cc0000;color:#fff;font:inherit;font-size:13px;font-weight:500;cursor:pointer;}
+#vbt-settings .vbt-s-btn:hover{background:#a80000;}
+#vbt-settings .vbt-s-sub{margin:2px 0 4px 18px;padding-left:14px;border-left:2px solid var(--vbt-line);}
+#vbt-settings .vbt-s-dot{display:inline-block;width:10px;height:10px;margin-right:8px;border-radius:50%;}
+#vbt-settings .vbt-s-spacer{flex:1;min-height:8px;}
+#vbt-settings .vbt-s-val{flex:none;max-width:60%;font-size:13px;color:var(--vbt-muted);text-align:right;word-break:break-word;}
+#vbt-settings .vbt-s-val.ok{color:#2ba640;}
+#vbt-settings .vbt-s-val.bad{color:#d93025;}
+#vbt-settings .vbt-s-actions{display:flex;flex:none;gap:8px;}
+#vbt-settings .vbt-s-btn.alt{background:var(--vbt-chip-active);color:var(--vbt-fg);}
+#vbt-settings .vbt-s-btn.alt:hover{background:var(--vbt-line);}
+#vbt-settings .vbt-s-pre{display:none;margin:8px 0 0;padding:12px;max-height:320px;overflow:auto;border-radius:10px;background:var(--vbt-chip);color:var(--vbt-fg);font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-word;user-select:text;}
+#vbt-settings .vbt-s-pre.open{display:block;}
+#vbt-settings .vbt-s-foot{padding:10px 22px;border-top:1px solid var(--vbt-line);font-size:11px;color:var(--vbt-muted);}
+#vbt-settings .vbt-s-foot a{color:inherit;}
+@keyframes vbt-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes vbt-fade-out{from{opacity:1}to{opacity:0}}
+@keyframes vbt-pop-in{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes vbt-pop-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes vbt-page-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#vbt-settings{animation:vbt-fade-in .2s ease-out both;}
+#vbt-settings .vbt-s-dialog{animation:vbt-pop-in .26s cubic-bezier(.2,.8,.2,1) both;}
+#vbt-settings.vbt-closing{animation:vbt-fade-out .17s ease-in both;pointer-events:none;}
+#vbt-settings.vbt-closing .vbt-s-dialog{animation:vbt-pop-out .17s ease-in both;}
+#vbt-settings .vbt-s-page.active{animation:vbt-page-in .22s ease-out both;}
+#vbt-settings .vbt-s-tab,#vbt-settings .vbt-s-close,#vbt-settings .vbt-s-seg button,#vbt-settings .vbt-s-btn{transition:background-color .15s ease,color .15s ease;}
+@media (prefers-reduced-motion:reduce){
+  #vbt-settings,#vbt-settings *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
+}
+@media (max-width:640px){
+  #vbt-settings .vbt-s-main{flex-direction:column;}
+  #vbt-settings .vbt-s-nav{width:auto;flex-direction:row;border-right:0;border-bottom:1px solid var(--vbt-line);overflow-x:auto;}
+  #vbt-settings .vbt-s-tab{white-space:nowrap;}
+}
+`;
+    const style = doc.createElement("style");
+    style.id = VBT_SETTINGS_ID + "-style";
+    style.textContent = css;
+    doc.head.appendChild(style);
+
+    const h = (tag, cls, text) => {
+      const e = doc.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    };
+
+    // Save + apply. `legacy` = settings that also need config_init() to re-apply.
+    const commit = (key, legacy) => {
+      user_data_api.set();
+      apply_hide_buttons_css();
+      if (key === "dark_mode") {
+        darkModeSystem.apply();
+        applyTheme();
+      }
+      if (legacy) config_api.config_init(user_data.language);
+    };
+    function applyTheme() {
+      const o = doc.getElementById(VBT_SETTINGS_ID);
+      if (o) o.setAttribute("data-theme", vbt_settings_theme());
+    }
+
+    const mkRow = (title, desc, tag) => {
+      const row = h(tag || "div", "vbt-s-row");
+      const txt = h("div", "vbt-s-text");
+      txt.append(h("div", "vbt-s-title", title));
+      if (desc) txt.append(h("div", "vbt-s-desc", desc));
+      row.append(txt);
+      return row;
+    };
+
+    const toggle = (it) => {
+      const row = mkRow(it.label, it.desc, "label");
+      const sw = h("span", "vbt-s-switch");
+      const input = doc.createElement("input");
+      input.type = "checkbox";
+      sw.append(input, doc.createElement("i"));
+      const get =
+        it.get ||
+        (() =>
+          it.notOff
+            ? user_data[it.key] !== "off"
+            : user_data[it.key] === "on");
+      input.checked = !!get();
+      input.addEventListener("change", () => {
+        if (it.set) it.set(input.checked);
+        else {
+          user_data[it.key] = input.checked ? "on" : "off";
+          commit(it.key, it.legacy);
+        }
+        if (it.after) it.after(input.checked);
+      });
+      row.append(sw);
+      return row;
+    };
+
+    const seg = (it) => {
+      const row = mkRow(it.label, it.desc);
+      const wrap = h("div", "vbt-s-seg");
+      const btns = it.options.map(([label, value, needLogin]) => {
+        const b = h("button", null, label);
+        b.type = "button";
+        if (needLogin && user_data.login !== true) b.disabled = true;
+        b.addEventListener("click", () => {
+          user_data[it.key] = value;
+          commit(it.key, it.legacy);
+          paint();
+        });
+        wrap.append(b);
+        return [b, value];
+      });
+      const paint = () =>
+        btns.forEach(([b, v]) => b.classList.toggle("on", user_data[it.key] === v));
+      paint();
+      row.append(wrap);
+      return row;
+    };
+
+    const select = (it) => {
+      const row = mkRow(it.label, it.desc);
+      const sel = h("select", "vbt-s-select");
+      for (const [label, value] of it.options) {
+        const o = h("option", null, label);
+        o.value = value;
+        sel.append(o);
+      }
+      sel.value = String(it.get());
+      sel.addEventListener("change", () => it.set(sel.value));
+      row.append(sel);
+      return row;
+    };
+
+    const button = (it) => {
+      const row = mkRow(it.label, it.desc);
+      const wrap = h("div", "vbt-s-actions");
+      for (const b0 of it.buttons || [{ text: it.button, action: it.action }]) {
+        const b = h("button", "vbt-s-btn" + (b0.alt ? " alt" : ""), b0.text);
+        b.type = "button";
+        b.addEventListener("click", () => b0.action(b));
+        wrap.append(b);
+      }
+      row.append(wrap);
+      return row;
+    };
+
+    const info = (it) => {
+      const row = mkRow(it.label, it.desc);
+      const v = h("div", "vbt-s-val" + (it.cls ? " " + it.cls() : ""), String(it.value()));
+      row.append(v);
+      return row;
+    };
+
+    // diagnostics report (hidden until requested)
+    const diagPre = h("pre", "vbt-s-pre");
+    const diagNode = h("div");
+    diagNode.append(diagPre);
+
+    // ---- quality / speed ----
+    function applyQualityPreference() {
+      try {
+        if (!user_data.default_quality || user_data.default_quality === "off") return;
+        const player = document.querySelector(".html5-video-player");
+        const video = document.querySelector("video");
+        if (!player || !video) return;
+        const levels = player.getAvailableQualityLevels?.();
+        if (!levels || levels.length === 0) return;
+        const startIndex = QUALITY_ORDER.indexOf(user_data.default_quality);
+        const candidates =
+          startIndex >= 0 ? QUALITY_ORDER.slice(startIndex) : QUALITY_ORDER;
+        const chosen =
+          candidates.find((q) => levels.includes(q)) || levels[levels.length - 1];
+        if (chosen && player.getPlaybackQualityLabel?.() !== chosen) {
+          player.setPlaybackQualityRange?.(chosen, chosen);
+        }
+      } catch (e) {}
+    }
+    function applySpeedPreference() {
+      try {
+        if (!user_data.default_speed) return;
+        const video = document.querySelector("video");
+        if (!video) return;
+        const s = parseFloat(user_data.default_speed);
+        if (isFinite(s)) video.playbackRate = s;
+      } catch (e) {}
+    }
+
+    // ---- SponsorBlock categories (sub-list under the SponsorBlock toggle) ----
+    const SB_LABELS = {
+      sponsor: ["Sponsor", "#00d400"],
+      intro: ["Intro / Intermission", "#00ffff"],
+      outro: ["Outro / Credits", "#0202ed"],
+      selfpromo: ["Self-promotion", "#ffff00"],
+      interaction: ["Interaction reminder", "#cc00ff"],
+      music_offtopic: ["Music: non-music section", "#ff9900"],
+    };
+    const sbBox = h("div", "vbt-s-sub");
+    const sbRows = [];
+    for (const [id, [label, color]] of Object.entries(SB_LABELS)) {
+      const row = h("label", "vbt-s-row");
+      const t = h("div", "vbt-s-title");
+      const dot = h("span", "vbt-s-dot");
+      dot.style.background = color;
+      t.append(dot, label);
+      const sw = h("span", "vbt-s-switch");
+      const input = doc.createElement("input");
+      input.type = "checkbox";
+      input.checked = (user_data.sb_categories?.[id] ?? "on") === "on";
+      input.addEventListener("change", () => {
+        if (!user_data.sb_categories) user_data.sb_categories = {};
+        user_data.sb_categories[id] = input.checked ? "on" : "off";
+        user_data_api.set();
+        sb_segmentCache.clear();
+      });
+      sw.append(input, doc.createElement("i"));
+      row.append(t, sw);
+      sbBox.append(row);
+      sbRows.push(row);
+    }
+    const refreshSb = () =>
+      sbRows.forEach((r) =>
+        r.classList.toggle("disabled", user_data.sponsorblock !== "on"),
+      );
+    refreshSb();
+
+    const hide = (key, label, desc) => ({ t: "toggle", key, label, desc });
+    const ON_OFF = [["On", "on"], ["Off", "off"]];
+    const ON_OFF_SUB = [["On", "on"], ["Off", "off"], ["Only subscribed", "subscribed", true]];
+    const gridOpts = [["3 (Default)", "3"], ["4", "4"], ["5", "5"]];
+    const grid = (key, label) => ({
+      t: "select",
+      label,
+      options: gridOpts,
+      get: () => user_data[key] || 3,
+      set: (v) => {
+        user_data[key] = parseInt(v, 10);
+        user_data_api.set();
+        gridUpdatePageLayout();
+      },
+    });
+
+    const tabs = [
+      {
+        id: "general",
+        label: "General",
+        icon: "M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z",
+        sections: [
+          {
+            title: "Appearance",
+            items: [
+              { t: "seg", key: "dark_mode", legacy: true, label: "Dark mode", desc: "Follow the system, or force the theme on or off", options: [["Auto", "auto"], ["On", "on"], ["Off", "off"]] },
+              { t: "toggle", key: "disable_saturated_hover", legacy: true, label: "Disable saturated hover", desc: "Removes the coloured hover tint and button backgrounds" },
+            ],
+          },
+          {
+            title: "Home & feed",
+            items: [
+              grid("grid_content_per_row", "Videos per row"),
+              grid("grid_news_per_row", "News per row"),
+              grid("grid_shorts_per_row", "Shorts per row"),
+              hide("show_full_video_title", "Show full video titles"),
+              hide("hide_grid_avatar", "Hide channel avatars (home grid)"),
+              hide("hide_views", "Hide views", "Hides the view count in video cards"),
+              hide("hide_thumbnail_badges", "Hide thumbnail badges", "New, 4K and similar badges"),
+              { t: "toggle", key: "disable_play_on_hover", legacy: true, label: "Disable play on hover", desc: "Stops video previews playing when hovering a thumbnail" },
+              hide("hide_microphone_icon", "Hide microphone icon"),
+            ],
+          },
+          {
+            title: "Recommendations",
+            items: [
+              { t: "seg", key: "open_recommend_shorts", legacy: true, label: "Shorts recommendations", options: ON_OFF_SUB },
+              { t: "seg", key: "open_recommend_liveroom", legacy: true, label: "Live recommendations", options: ON_OFF_SUB },
+              { t: "seg", key: "open_recommend_movie", legacy: true, label: "Movie recommendations", options: ON_OFF },
+              { t: "seg", key: "open_recommend_popular", legacy: true, label: "Trending", options: ON_OFF },
+              { t: "seg", key: "open_recommend_playables", legacy: true, label: "Playables recommendations", options: ON_OFF },
+            ],
+          },
+          {
+            title: "Shorts",
+            items: [
+              { t: "toggle", key: "global_shorts_block", legacy: true, label: "Block all Shorts" },
+              { t: "toggle", key: "add_shorts_upload_date", legacy: true, label: "Show Shorts upload time" },
+              { t: "toggle", key: "shorts_change_author_name", legacy: true, label: "Show channel name instead of username" },
+              { t: "toggle", key: "short_buy_super_thanks", legacy: true, label: "Show Buy Super Thanks" },
+              { t: "toggle", key: "shorts_disable_loop_play", legacy: true, label: "Disable loop play" },
+              { t: "toggle", key: "shorts_auto_scroll", legacy: true, label: "Auto-scroll to next Short" },
+              { t: "toggle", key: "shorts_add_video_progress", legacy: true, notOff: true, label: "Add video progress bar" },
+              { t: "toggle", key: "shorts_dbclick_like", legacy: true, label: "Double-click to like" },
+            ],
+          },
+        ],
+      },
+      {
+        id: "watch",
+        label: "Watch Page",
+        icon: "M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zm-5-6l-7 4V7z",
+        sections: [
+          {
+            title: "Action bar buttons",
+            items: [
+              hide("hide_ask_button", "Hide Ask (Gemini)"),
+              hide("hide_download_button", "Hide Download"),
+              hide("hide_share_button", "Hide Share"),
+              hide("hide_thanks_button", "Hide Thanks"),
+              hide("hide_clip_button", "Hide Clip"),
+              hide("hide_save_button", "Hide Save to playlist"),
+              hide("hide_more_actions_button", "Hide More actions"),
+              hide("hide_subscribe_button", "Hide Subscribe + Bell"),
+              hide("hide_like_bar", "Hide Like/Dislike bar"),
+              hide("hide_join_button", "Hide Join"),
+            ],
+          },
+          {
+            title: "Page extras",
+            items: [
+              hide("hide_ai_summary", "Hide AI summaries"),
+              {
+                t: "toggle",
+                label: "Hide live chat replay teaser",
+                get: () => user_data.watch_page_config?.hide_live_chat_replay === "on",
+                set: (on) => {
+                  if (!user_data.watch_page_config) user_data.watch_page_config = {};
+                  user_data.watch_page_config.hide_live_chat_replay = on ? "on" : "off";
+                  user_data_api.set();
+                  if (on) hide_teaser_carousel();
+                  else {
+                    const n = doc.querySelector("#teaser-carousel");
+                    if (n) n.style.display = "";
+                  }
+                },
+              },
+              { t: "toggle", key: "restore_related_sidebar_layout", legacy: true, label: "Restore related sidebar layout" },
+            ],
+          },
+        ],
+      },
+      {
+        id: "player",
+        label: "Player",
+        icon: "M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z",
+        sections: [
+          {
+            title: "Playback",
+            items: [
+              {
+                t: "select",
+                label: "Default quality",
+                options: [["Off", "off"], ["4K", "hd2160"], ["1440p", "hd1440"], ["1080p", "hd1080"], ["720p", "hd720"], ["480p", "large"], ["360p", "medium"], ["240p", "small"], ["144p", "tiny"]],
+                get: () => user_data.default_quality || "off",
+                set: (v) => {
+                  user_data.default_quality = v;
+                  user_data_api.set();
+                  applyQualityPreference();
+                },
+              },
+              {
+                t: "select",
+                label: "Default speed",
+                options: [["0.25x", "0.25"], ["0.5x", "0.5"], ["0.75x", "0.75"], ["1x", "1"], ["1.25x", "1.25"], ["1.5x", "1.5"], ["1.75x", "1.75"]],
+                get: () => user_data.default_speed || "1",
+                set: (v) => {
+                  user_data.default_speed = v;
+                  user_data_api.set();
+                  applySpeedPreference();
+                },
+              },
+              { t: "toggle", key: "sponsorblock", legacy: true, label: "SponsorBlock: skip sponsors", desc: "Automatically skip segments using the SponsorBlock API", after: refreshSb },
+              { t: "node", node: sbBox },
+            ],
+          },
+          {
+            title: "Player look & overlays",
+            items: [
+              { t: "toggle", key: "old_player_ui", label: "Old player UI", desc: "Needs a page reload to take effect", after: () => { if (confirm("Old Player UI requires a page reload to take effect. Reload now?")) unsafeWindow.location.reload(); } },
+              hide("restore_red_progress_bar", "Restore red progress bar"),
+              hide("hide_end_cards", "Hide end cards (overlay)"),
+              hide("hide_fullscreen_controls", "Hide fullscreen controls"),
+              hide("hide_paid_promotion", "Hide paid promotion overlay"),
+            ],
+          },
+        ],
+      },
+      {
+        id: "advanced",
+        label: "Advanced",
+        bottom: true,
+        icon: "M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z",
+        sections: [
+          {
+            title: "Backup",
+            items: [
+              { t: "button", label: "Settings backup", desc: "Export your settings to a .vbt file, or restore them from one", buttons: [{ text: "Export", alt: true, action: vbt_export_settings }, { text: "Import", alt: true, action: vbt_import_settings }] },
+              { t: "button", label: "Reset all settings", desc: "Restores every setting to its default and reloads the page", button: "Reset", action: () => user_data_api.reset() },
+            ],
+          },
+          {
+            title: "Information",
+            items: [
+              { t: "info", label: "Version", value: () => { try { return GM_info.script.version; } catch (e) { return "unknown"; } } },
+              { t: "info", label: "Status", value: vbt_status_text, cls: () => (isinint && error_messages.length === 0 ? "ok" : "bad") },
+              { t: "info", label: "Page", value: () => page_type },
+              { t: "info", label: "Browser", value: () => browser_info.name + " " + browser_info.version },
+              { t: "info", label: "Account", value: vbt_mask_channel_id },
+              {
+                t: "button",
+                label: "Diagnostics report",
+                desc: "Full technical details, useful when reporting a problem",
+                buttons: [
+                  {
+                    text: "Show",
+                    alt: true,
+                    action: (b) => {
+                      const open = !diagPre.classList.contains("open");
+                      if (open) diagPre.textContent = vbt_diagnostics_text();
+                      diagPre.classList.toggle("open", open);
+                      b.textContent = open ? "Hide" : "Show";
+                    },
+                  },
+                  {
+                    text: "Copy",
+                    alt: true,
+                    action: (b) => {
+                      const ok = vbt_copy_text(vbt_diagnostics_text());
+                      b.textContent = ok ? "Copied" : "Failed";
+                      setTimeout(() => (b.textContent = "Copy"), 1500);
+                    },
+                  },
+                ],
+              },
+              { t: "node", node: diagNode },
+            ],
+          },
+        ],
+      },
+    ];
+
+    // ---- assemble ----
+    const overlay = h("div");
+    overlay.id = VBT_SETTINGS_ID;
+    overlay.setAttribute("data-theme", vbt_settings_theme());
+    const dialog = h("div", "vbt-s-dialog");
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-label", "vBlockTube settings");
+
+    const head = h("div", "vbt-s-head");
+    const title = h("h2", null, "vBlockTube Settings");
+    try {
+      title.append(h("small", null, "v" + GM_info.script.version));
+    } catch (e) {}
+    const closeBtn = h("button", "vbt-s-close", "\u00d7");
+    closeBtn.type = "button";
+    closeBtn.title = "Close";
+    head.append(title, closeBtn);
+
+    const main = h("div", "vbt-s-main");
+    const nav = h("div", "vbt-s-nav");
+    const content = h("div", "vbt-s-content");
+    const tabButtons = {};
+    const pages = {};
+
+    const build = { toggle, seg, select, button, info };
+    for (const tab of tabs) {
+      const tb = h("button", "vbt-s-tab");
+      tb.type = "button";
+      const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      const path = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", tab.icon);
+      svg.append(path);
+      tb.append(svg, tab.label);
+      tb.addEventListener("click", () => showTab(tab.id));
+      if (tab.bottom) nav.append(h("div", "vbt-s-spacer"));
+      nav.append(tb);
+      tabButtons[tab.id] = tb;
+
+      const page = h("div", "vbt-s-page");
+      for (const sec of tab.sections) {
+        const s = h("div", "vbt-s-section");
+        s.append(h("h3", null, sec.title));
+        for (const it of sec.items) {
+          if (!it) continue;
+          s.append(it.t === "node" ? it.node : build[it.t](it));
+        }
+        page.append(s);
+      }
+      content.append(page);
+      pages[tab.id] = page;
+    }
+
+    function showTab(id) {
+      if (!pages[id]) id = "general";
+      for (const k of Object.keys(pages)) {
+        pages[k].classList.toggle("active", k === id);
+        tabButtons[k].classList.toggle("active", k === id);
+      }
+      content.scrollTop = 0;
+    }
+
+    main.append(nav, content);
+
+    const foot = h("div", "vbt-s-foot");
+    foot.append("Dislike counts by ");
+    const a = h("a", null, "returnyoutubedislike.com");
+    a.href = "https://returnyoutubedislike.com";
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    foot.append(a);
+
+    dialog.append(head, main, foot);
+    overlay.append(dialog);
+    doc.body.appendChild(overlay);
+    showTab(initialTab || "general");
+
+    let closing = false;
+    const close = () => {
+      if (closing) return;
+      closing = true;
+      doc.removeEventListener("keydown", onKey, true);
+      overlay.classList.add("vbt-closing"); // play the exit animation first
+      setTimeout(() => {
+        overlay.remove();
+        style.remove();
+      }, 180);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        close();
+      }
+    };
+    doc.addEventListener("keydown", onKey, true);
+    closeBtn.addEventListener("click", close);
+    overlay.addEventListener("mousedown", (e) => {
+      if (e.target === overlay) close();
+    });
+  }
+
+  /* Settings button in the masthead, right after the microphone button */
+  function init_settings_button() {
+    if (unsafeWindow.location.hostname !== "www.youtube.com") return;
+    const doc = unsafeWindow.document;
+    if (unsafeWindow.__vbt_settings_btn) return;
+    unsafeWindow.__vbt_settings_btn = true;
+
+    const style = doc.createElement("style");
+    style.textContent = `
+      #vbt-settings-btn{display:inline-flex;align-items:center;justify-content:center;flex:none;width:40px;height:40px;margin-left:8px;padding:0;border:0;border-radius:50%;cursor:pointer;background:rgba(0,0,0,.05);color:#0f0f0f;}
+      #vbt-settings-btn:hover{background:rgba(0,0,0,.1);}
+      #vbt-settings-btn[data-dark]{background:rgba(255,255,255,.1);color:#f1f1f1;}
+      #vbt-settings-btn[data-dark]:hover{background:rgba(255,255,255,.2);}
+      #vbt-settings-btn svg{width:24px;height:24px;fill:currentColor;pointer-events:none;}
+    `;
+    (doc.head || doc.documentElement).appendChild(style);
+
+    const GEAR =
+      "M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z";
+
+    const makeBtn = () => {
+      const b = doc.createElement("button");
+      b.id = "vbt-settings-btn";
+      b.type = "button";
+      b.title = "vBlockTube settings";
+      b.setAttribute("aria-label", "vBlockTube settings");
+      const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      const p = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("d", GEAR);
+      svg.append(p);
+      b.append(svg);
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        display_settings_win("general");
+      });
+      return b;
+    };
+
+    let raf = 0;
+    const ensure = () => {
+      raf = 0;
+      const mic = doc.querySelector("ytd-masthead #voice-search-button");
+      if (!mic) return;
+      let btn = doc.getElementById("vbt-settings-btn");
+      if (btn && btn.previousElementSibling === mic) return;
+      if (!btn) btn = makeBtn();
+      mic.after(btn);
+      syncTheme();
+    };
+    const syncTheme = () => {
+      const btn = doc.getElementById("vbt-settings-btn");
+      if (!btn) return;
+      if (vbt_page_is_dark()) btn.setAttribute("data-dark", "");
+      else btn.removeAttribute("data-dark");
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(ensure);
+    };
+    new MutationObserver(schedule).observe(doc.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+    unsafeWindow.addEventListener("yt-navigate-finish", schedule, { passive: true });
+    unsafeWindow.addEventListener("yt-dark-mode-toggled", () => setTimeout(syncTheme, 150));
+    new MutationObserver(syncTheme).observe(doc.documentElement, {
+      attributes: true,
+      attributeFilter: ["dark"],
+    });
+    unsafeWindow.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => setTimeout(syncTheme, 150));
+    schedule();
+  }
+
+  /* ====== HIDE-ELEMENTS CSS ====== */
 
   function apply_hide_buttons_css() {
     const rules = [];
@@ -7886,14 +7580,26 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
       rules.push(".ytLockupMetadataViewModelAvatar { display: none !important; }");
     }
 
-    // Ported from Control Panel for YouTube v1.36.0: hide the new "views" play
-    // icon that sits in front of the view count in metadata rows (desktop).
-    if (user_data.hide_views_icon === "on") {
+    // Hide the view count completely in metadata rows (new layout): the play
+    // icon, the "13M" text and the delimiter that follows it, so no stray
+    // separator is left behind.
+    if (user_data.hide_views === "on") {
       const VIEWS_ICON_PATH =
         "M5 4.623v14.755a1.5 1.5 0 002.261 1.294l12.766-7.51L22 12.002l-1.973-1.162L7.26 3.33A1.5 1.5 0 005 4.623Zm2 13.88V5.497L18.056 12 7 18.503Z";
-      rules.push(
-        `.ytContentMetadataViewModelLeadingIcon:has(path[d="${VIEWS_ICON_PATH}"]) { display: none !important; }`,
-      );
+      const ICON = `.ytContentMetadataViewModelLeadingIcon:has(path[d="${VIEWS_ICON_PATH}"])`;
+      rules.push(`
+        /* icon + view count text + the delimiter after it */
+        ${ICON},
+        ${ICON} + .ytContentMetadataViewModelMetadataText,
+        ${ICON} + .ytContentMetadataViewModelMetadataText + .ytContentMetadataViewModelDelimiter,
+        /* fallback if the icon is missing or changes (English labels) */
+        .ytContentMetadataViewModelMetadataText[aria-label$=" views" i],
+        .ytContentMetadataViewModelMetadataText[aria-label$=" views" i] + .ytContentMetadataViewModelDelimiter,
+        .ytContentMetadataViewModelMetadataText[aria-label$=" view" i],
+        .ytContentMetadataViewModelMetadataText[aria-label$=" view" i] + .ytContentMetadataViewModelDelimiter {
+          display: none !important;
+        }
+      `);
     }
 
     // Ported from Control Panel for YouTube v1.36.0: hide thumbnail badges
@@ -7934,6 +7640,41 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
         }
       `);
     }
+
+    // Auto multi-line metadata row (channel, collab names, views, upload time).
+    // YouTube keeps this row on one line and clips it, which hides the channel
+    // name / date when the grid is set to 4 or 5 per row. Let it wrap instead,
+    // so it adapts to any grid size automatically.
+    rules.push(`
+        ytd-rich-item-renderer .ytLockupMetadataViewModelTextContainer,
+        ytd-rich-item-renderer .ytLockupMetadataViewModelMetadata,
+        ytd-rich-item-renderer yt-content-metadata-view-model {
+          max-height: none !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+        ytd-rich-item-renderer .ytContentMetadataViewModelMetadataRow {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          align-items: center !important;
+          white-space: normal !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          max-height: none !important;
+          height: auto !important;
+        }
+        ytd-rich-item-renderer .ytContentMetadataViewModelMetadataText {
+          white-space: normal !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          flex: 0 1 auto !important;
+        }
+        ytd-rich-item-renderer .ytContentMetadataViewModelIcon,
+        ytd-rich-item-renderer .ytContentMetadataViewModelLeadingIcon,
+        ytd-rich-item-renderer .ytContentMetadataViewModelDelimiter {
+          flex-shrink: 0 !important;
+        }
+      `);
 
     if (user_data.hide_paid_promotion === "on") {
       rules.push(
@@ -8049,561 +7790,4 @@ ytd-masthead[is-shorts-page][dark] #background.ytd-masthead,
     }
   }
 
-  function display_hide_buttons_win() {
-    const existing = unsafeWindow.document.getElementById(
-      "yt-hide-buttons-popup",
-    );
-    if (existing) existing.remove();
-
-    const css = `
-  #yt-hide-buttons-popup{
-    z-index:999999999;
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    padding:0;
-    background-color:#ffffff;
-    border:1px solid #3498db;
-    border-radius:5px;
-    box-shadow:0 0 10px rgba(0,0,0,0.3);
-    width:260px;
-    max-height:80vh;
-    display:flex;
-    flex-direction:column;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-
-  #yt-hide-buttons-header{
-    cursor:move;
-    user-select:none;
-    padding:4px 8px;
-    padding-right:32px;
-    background-color:#3498db;
-    color:#ffffff;
-    border-radius:4px 4px 0 0;
-    font-weight:bold;
-    font-size:13px;
-    position:relative;
-  }
-
-  #yt-hide-buttons-close{
-    position:absolute;
-    top:50%;
-    right:8px;
-    transform:translateY(-50%);
-    cursor:pointer;
-    background-color:transparent;
-    color:#ffffff;
-    border:none;
-    padding:0;
-    width:20px;
-    height:20px;
-    border-radius:3px;
-    font-size:16px;
-    font-weight:bold;
-    line-height:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:background-color 0.2s ease;
-  }
-
-  #yt-hide-buttons-close:hover{
-    background-color:rgba(231,76,60,0.9);
-  }
-
-  #yt-hide-buttons-close:active{
-    background-color:#c0392b;
-  }
-
-  #yt-hide-buttons-body{
-    flex:1 1 auto;
-    overflow-y:auto;
-    padding:6px 8px 8px 8px;
-  }
-
-  .yt-hb-row{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    margin:2px 0;
-  }
-
-  .yt-hb-row label{
-    font-size:13px;
-  }
-
-  .yt-hb-row.disabled label{
-    color:#999;
-  }
-
-  .yt-hb-select-row{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    margin:6px 0 4px 0;
-  }
-
-  .yt-hb-select-row label{
-    font-size:13px;
-    min-width:120px;
-  }
-
-  .yt-hb-select-row select{
-    flex:1 1 auto;
-    padding:4px 6px;
-    font-size:13px;
-  }
-
-  .yt-hb-section{
-    border:1px solid #e0e0e0;
-    border-radius:6px;
-    margin:8px 0;
-    overflow:hidden;
-  }
-
-  .yt-hb-section-header{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:8px 10px;
-    background:#f7f7f7;
-    cursor:pointer;
-    user-select:none;
-    font-weight:600;
-    font-size:13px;
-  }
-
-  .yt-hb-caret{
-    transition:transform 0.2s ease;
-    display:inline-block;
-    font-size:12px;
-  }
-
-  .yt-hb-section-body{
-    padding:6px 8px 8px 8px;
-  }
-
-  .yt-hb-section-body.collapsed{
-    display:none;
-  }
-  `;
-    const style = unsafeWindow.document.createElement("style");
-    style.textContent = css;
-    unsafeWindow.document.head.appendChild(style);
-
-    const popup = unsafeWindow.document.createElement("div");
-    popup.id = "yt-hide-buttons-popup";
-
-    const header = unsafeWindow.document.createElement("div");
-    header.id = "yt-hide-buttons-header";
-    header.textContent = "Watch Page Tweaks";
-
-    const closeBtn = unsafeWindow.document.createElement("button");
-    closeBtn.id = "yt-hide-buttons-close";
-    closeBtn.innerHTML = "×";
-    closeBtn.title = "Close";
-    header.appendChild(closeBtn);
-
-    const body = unsafeWindow.document.createElement("div");
-    body.id = "yt-hide-buttons-body";
-
-    function selectRow(id, labelText, options) {
-      const div = unsafeWindow.document.createElement("div");
-      div.className = "yt-hb-select-row";
-      const label = unsafeWindow.document.createElement("label");
-      label.htmlFor = id;
-      label.textContent = labelText;
-      const select = unsafeWindow.document.createElement("select");
-      select.id = id;
-      options.forEach(({ text, value }) => {
-        const opt = unsafeWindow.document.createElement("option");
-        opt.value = value;
-        opt.textContent = text;
-        select.appendChild(opt);
-      });
-      div.append(label, select);
-      return { div, select };
-    }
-
-    function row(id, labelText) {
-      const div = unsafeWindow.document.createElement("div");
-      div.className = "yt-hb-row";
-      const input = unsafeWindow.document.createElement("input");
-      input.type = "checkbox";
-      input.id = id;
-      const label = unsafeWindow.document.createElement("label");
-      label.htmlFor = id;
-      label.textContent = labelText;
-      div.append(input, label);
-      return { div, input };
-    }
-
-    const actionRows = [
-      row("hb_ask", "Ask (Gemini)"),
-      row("hb_download", "Download"),
-      row("hb_share", "Share"),
-      row("hb_thanks", "Thanks"),
-      row("hb_clip", "Clip"),
-      row("hb_save", "Save to playlist"),
-      row("hb_more", "More actions"),
-      row("hb_subscribe", "Subscribe+Bell"),
-      row("hb_likebar", "Like/Dislike bar"),
-      row("hb_join", "Join"),
-    ];
-
-    const otherRows = [
-      row("hb_endcards", "End cards (overlay)"),
-      row("hb_livechat_replay", "Live chat replay teaser"),
-      row("hb_fullscreen_controls", "Hide fullscreen controls"),
-      row("hb_ai_summary", "Hide AI summaries"),
-      row("hb_microphone", "Hide microphone icon"),
-      row("hb_restore_red_progress_bar", "Restore red progress bar"),
-      row("hb_paid_promotion", "Hide paid promotion overlay"),
-      row("hb_old_player_ui", "Old Player UI (reload required)"),
-      row("hb_full_video_title", "Show full video title"),
-      row("hb_grid_avatar", "Hide channel avatars (home grid)"),
-      row("hb_views_icon", "Hide views icon"),
-      row("hb_thumbnail_badges", "Hide thumbnail badges (New, 4K etc.)"),
-      row("hb_fix_ghost_cards", "Fix grid loading placeholders (home/subs)"),
-    ];
-
-    const rows = [...actionRows, ...otherRows];
-
-    const qualityRow = selectRow("sel_quality", "Default quality", [
-      { text: "Off", value: "off" },
-      { text: "4K", value: "hd2160" },
-      { text: "1440p", value: "hd1440" },
-      { text: "1080p", value: "hd1080" },
-      { text: "720p", value: "hd720" },
-      { text: "480p", value: "large" },
-      { text: "360p", value: "medium" },
-      { text: "240p", value: "small" },
-      { text: "144p", value: "tiny" },
-    ]);
-
-    const speedRow = selectRow("sel_speed", "Default speed", [
-      { text: "0.25x", value: "0.25" },
-      { text: "0.5x", value: "0.5" },
-      { text: "0.75x", value: "0.75" },
-      { text: "1x", value: "1" },
-      { text: "1.25x", value: "1.25" },
-      { text: "1.5x", value: "1.5" },
-      { text: "1.75x", value: "1.75" },
-    ]);
-
-    body.append(qualityRow.div, speedRow.div);
-
-    const buttonsSection = unsafeWindow.document.createElement("div");
-    buttonsSection.className = "yt-hb-section";
-
-    const sectionHeader = unsafeWindow.document.createElement("div");
-    sectionHeader.className = "yt-hb-section-header";
-    const caret = unsafeWindow.document.createElement("span");
-    caret.className = "yt-hb-caret";
-    caret.textContent = "▾";
-    const sectionTitle = unsafeWindow.document.createElement("span");
-    sectionTitle.textContent = "Action bar buttons";
-    sectionHeader.append(caret, sectionTitle);
-
-    const sectionBody = unsafeWindow.document.createElement("div");
-    sectionBody.className = "yt-hb-section-body collapsed";
-    caret.style.transform = "rotate(-90deg)";
-
-    for (const { div } of actionRows) {
-      sectionBody.appendChild(div);
-    }
-
-    sectionHeader.addEventListener("click", () => {
-      const collapsed = sectionBody.classList.toggle("collapsed");
-      caret.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0deg)";
-    });
-
-    buttonsSection.append(sectionHeader, sectionBody);
-    body.append(buttonsSection);
-
-    // SponsorBlock categories
-    const SB_CATEGORY_LABELS = {
-      sponsor:       "Sponsor",
-      intro:         "Intro / Intermission",
-      outro:         "Outro / Credits",
-      selfpromo:     "Self-promotion",
-      interaction:   "Interaction reminder",
-      music_offtopic:"Music: non-music section",
-    };
-    const SB_CATEGORY_DOTS = {
-      sponsor:       "#00d400",
-      intro:         "#00ffff",
-      outro:         "#0202ed",
-      selfpromo:     "#ffff00",
-      interaction:   "#cc00ff",
-      music_offtopic:"#ff9900",
-    };
-
-    const sbSection = unsafeWindow.document.createElement("div");
-    sbSection.className = "yt-hb-section";
-
-    const sbSectionHeader = unsafeWindow.document.createElement("div");
-    sbSectionHeader.className = "yt-hb-section-header";
-    const sbCaret = unsafeWindow.document.createElement("span");
-    sbCaret.className = "yt-hb-caret";
-    sbCaret.textContent = "▾";
-    const sbSectionTitle = unsafeWindow.document.createElement("span");
-    sbSectionTitle.textContent = "SponsorBlock categories";
-    sbSectionHeader.append(sbCaret, sbSectionTitle);
-
-    const sbSectionBody = unsafeWindow.document.createElement("div");
-    sbSectionBody.className = "yt-hb-section-body collapsed";
-    sbCaret.style.transform = "rotate(-90deg)";
-
-    sbSectionHeader.addEventListener("click", () => {
-      const collapsed = sbSectionBody.classList.toggle("collapsed");
-      sbCaret.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0deg)";
-    });
-
-    const sbCheckboxes = {};
-    for (const [catId, catLabel] of Object.entries(SB_CATEGORY_LABELS)) {
-      const rowDiv = unsafeWindow.document.createElement("div");
-      rowDiv.className = "yt-hb-row";
-
-      const input = unsafeWindow.document.createElement("input");
-      input.type = "checkbox";
-      input.id = "sb_cat_" + catId;
-      input.checked = (user_data.sb_categories?.[catId] ?? "on") === "on";
-
-      const label = unsafeWindow.document.createElement("label");
-      label.htmlFor = input.id;
-
-      // colored dot
-      const dot = unsafeWindow.document.createElement("span");
-      dot.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${SB_CATEGORY_DOTS[catId]};margin-right:5px;flex-shrink:0;`;
-
-      label.append(dot, catLabel);
-      rowDiv.append(input, label);
-      sbSectionBody.appendChild(rowDiv);
-      sbCheckboxes[catId] = input;
-
-      input.addEventListener("change", () => {
-        if (!user_data.sb_categories) user_data.sb_categories = {};
-        user_data.sb_categories[catId] = input.checked ? "on" : "off";
-        user_data_api.set();
-        sb_segmentCache.clear();
-      });
-    }
-
-    sbSection.append(sbSectionHeader, sbSectionBody);
-    body.appendChild(sbSection);
-
-    // Disable SB categories section if SponsorBlock is off
-    const sbEnabled = user_data.sponsorblock === "on";
-    if (!sbEnabled) {
-      sbSectionHeader.style.opacity = "0.45";
-      sbSectionHeader.style.pointerEvents = "none";
-      sbSectionHeader.title = "Enable SponsorBlock first to configure categories";
-      Object.values(sbCheckboxes).forEach((inp) => {
-        inp.disabled = true;
-        inp.parentElement.style.opacity = "0.45";
-      });
-    }
-
-    for (const { div } of otherRows) {
-      body.appendChild(div);
-    }
-
-    // ---- Manage videos per row section ----
-    const gridSection = unsafeWindow.document.createElement("div");
-    gridSection.className = "yt-hb-section";
-
-    const gridSectionHeader = unsafeWindow.document.createElement("div");
-    gridSectionHeader.className = "yt-hb-section-header";
-
-    const gridCaret = unsafeWindow.document.createElement("span");
-    gridCaret.className = "yt-hb-caret";
-    gridCaret.textContent = "▾";
-    gridCaret.style.transform = "rotate(-90deg)"; // starts collapsed
-
-    const gridSectionTitle = unsafeWindow.document.createElement("span");
-    gridSectionTitle.textContent = "Manage videos per row";
-    gridSectionHeader.append(gridCaret, gridSectionTitle);
-
-    const gridSectionBody = unsafeWindow.document.createElement("div");
-    gridSectionBody.className = "yt-hb-section-body collapsed";
-
-    gridSectionHeader.addEventListener("click", () => {
-      const collapsed = gridSectionBody.classList.toggle("collapsed");
-      gridCaret.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0deg)";
-    });
-
-    const gridRows = [
-      { id: "grc_content", label: "Normal videos", key: "grid_content_per_row" },
-      { id: "grc_news",    label: "News",          key: "grid_news_per_row"    },
-      { id: "grc_shorts",  label: "Shorts",        key: "grid_shorts_per_row"  },
-    ];
-
-    const gridSelects = {};
-    for (const { id, label, key } of gridRows) {
-      const rowDiv = unsafeWindow.document.createElement("div");
-      rowDiv.className = "yt-hb-select-row";
-
-      const lbl = unsafeWindow.document.createElement("label");
-      lbl.htmlFor = id;
-      lbl.textContent = label;
-
-      const select = unsafeWindow.document.createElement("select");
-      select.id = id;
-
-      [{ text: "3 (Default)", value: 3 }, { text: "4", value: 4 }, { text: "5", value: 5 }]
-        .forEach(({ text, value }) => {
-          const opt = unsafeWindow.document.createElement("option");
-          opt.value = value;
-          opt.textContent = text;
-          select.appendChild(opt);
-        });
-
-      select.value = user_data[key] || 3;
-
-      select.addEventListener("change", () => {
-        user_data[key] = parseInt(select.value, 10);
-        user_data_api.set();
-        gridUpdatePageLayout();
-      });
-
-      gridSelects[key] = select;
-      rowDiv.append(lbl, select);
-      gridSectionBody.appendChild(rowDiv);
-    }
-
-    gridSection.append(gridSectionHeader, gridSectionBody);
-    body.appendChild(gridSection);
-    // ---- end Manage videos per row section ----
-
-    popup.append(header, body);
-    unsafeWindow.document.body.appendChild(popup);
-
-    const map = [
-      ["hb_ask", "hide_ask_button"],
-      ["hb_download", "hide_download_button"],
-      ["hb_share", "hide_share_button"],
-      ["hb_thanks", "hide_thanks_button"],
-      ["hb_clip", "hide_clip_button"],
-      ["hb_more", "hide_more_actions_button"],
-      ["hb_save", "hide_save_button"],
-      ["hb_subscribe", "hide_subscribe_button"],
-      ["hb_likebar", "hide_like_bar"],
-      ["hb_join", "hide_join_button"],
-      ["hb_endcards", "hide_end_cards"],
-      ["hb_fullscreen_controls", "hide_fullscreen_controls"],
-      ["hb_ai_summary", "hide_ai_summary"],
-      ["hb_microphone", "hide_microphone_icon"],
-      ["hb_restore_red_progress_bar", "restore_red_progress_bar"],
-      ["hb_paid_promotion", "hide_paid_promotion"],
-      ["hb_old_player_ui", "old_player_ui"],
-      ["hb_full_video_title", "show_full_video_title"],
-      ["hb_grid_avatar", "hide_grid_avatar"],
-      ["hb_views_icon", "hide_views_icon"],
-      ["hb_thumbnail_badges", "hide_thumbnail_badges"],
-      ["hb_fix_ghost_cards", "fix_ghost_cards"],
-    ];
-
-    const checkboxById = {};
-    for (const { input } of rows) {
-      checkboxById[input.id] = input;
-    }
-
-    qualityRow.select.value = user_data.default_quality || "off";
-    speedRow.select.value = user_data.default_speed || "1";
-
-    for (const [checkboxId, key] of map) {
-      const input = checkboxById[checkboxId];
-      input.checked = user_data[key] === "on";
-    }
-
-    // Live chat replay section
-    if (user_data.watch_page_config?.hide_live_chat_replay === "on") {
-      checkboxById["hb_livechat_replay"].checked = true;
-    }
-
-    function applyQualityPreference() {
-      try {
-        if (!user_data.default_quality || user_data.default_quality === "off")
-          return;
-        const player = document.querySelector(".html5-video-player");
-        const video = document.querySelector("video");
-        if (!player || !video) return;
-        const levels = player.getAvailableQualityLevels?.();
-        if (!levels || levels.length === 0) return;
-        const targetQuality = user_data.default_quality;
-        const startIndex = QUALITY_ORDER.indexOf(targetQuality);
-        const candidates =
-          startIndex >= 0 ? QUALITY_ORDER.slice(startIndex) : QUALITY_ORDER;
-        const chosen =
-          candidates.find((q) => levels.includes(q)) ||
-          levels[levels.length - 1];
-        if (chosen && player.getPlaybackQualityLabel?.() !== chosen) {
-          player.setPlaybackQualityRange?.(chosen, chosen);
-        }
-      } catch (e) {}
-    }
-
-    function applySpeedPreference() {
-      try {
-        if (!user_data.default_speed) return;
-        const video = document.querySelector("video");
-        if (!video) return;
-        const targetSpeed = parseFloat(user_data.default_speed);
-        if (!isFinite(targetSpeed)) return;
-        video.playbackRate = targetSpeed;
-      } catch (e) {}
-    }
-
-    qualityRow.select.addEventListener("change", () => {
-      user_data.default_quality = qualityRow.select.value;
-      user_data_api.set();
-      applyQualityPreference();
-    });
-
-    speedRow.select.addEventListener("change", () => {
-      user_data.default_speed = speedRow.select.value;
-      user_data_api.set();
-      applySpeedPreference();
-    });
-
-    for (const [checkboxId, key] of map) {
-      const input = checkboxById[checkboxId];
-      input.addEventListener("change", () => {
-        user_data[key] = input.checked ? "on" : "off";
-        user_data_api.set();
-        apply_hide_buttons_css();
-        if (key === "fix_ghost_cards") ghostFix.sync();
-        if (key === "old_player_ui") {
-          if (confirm("Old Player UI requires a page reload to take effect. Reload now?")) {
-            unsafeWindow.location.reload();
-          }
-        }
-      });
-    }
-
-    checkboxById["hb_livechat_replay"].addEventListener("change", () => {
-      user_data.watch_page_config.hide_live_chat_replay = checkboxById[
-        "hb_livechat_replay"
-      ].checked
-        ? "on"
-        : "off";
-      user_data_api.set();
-      if (user_data.watch_page_config.hide_live_chat_replay === "on") {
-        hide_teaser_carousel();
-      } else {
-        const n = unsafeWindow.document.querySelector("#teaser-carousel");
-        if (n) n.style.display = "";
-      }
-    });
-
-    function close() {
-      popup.remove();
-    }
-    closeBtn.addEventListener("click", close);
-    make_popup_draggable(popup, header, "pos_2666");
-
-  }
 })();
