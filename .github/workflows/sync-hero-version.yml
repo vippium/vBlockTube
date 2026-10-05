@@ -1,0 +1,49 @@
+name: Sync hero version
+
+# Keeps the version pill in assets/readme/hero.svg in step with the
+# `// @version` line of vBlockTube.user.js. The userscript header is the
+# single source of truth: bump it there and this workflow does the rest.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - vBlockTube.user.js
+  workflow_dispatch: # allows a manual run from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-hero-version
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update hero.svg from the userscript version
+        run: node scripts/sync-hero-version.mjs
+
+      - name: Commit and push if hero.svg changed
+        run: |
+          if git diff --quiet -- assets/readme/hero.svg; then
+            echo "hero.svg already up to date, nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/readme/hero.svg
+          git commit -m "chore: sync hero version [skip ci]"
+          # a newer push may have landed while this job was running
+          git pull --rebase
+          git push
+          
