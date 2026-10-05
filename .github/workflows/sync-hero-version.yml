@@ -46,4 +46,3 @@ jobs:
           # a newer push may have landed while this job was running
           git pull --rebase
           git push
-          

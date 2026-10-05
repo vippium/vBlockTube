@@ -2,8 +2,8 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(scriptDir, '..');
+// This file lives in the repo root, next to vBlockTube.user.js.
+const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 const userscriptPath = path.join(repoRoot, 'vBlockTube.user.js');
 const heroPath = path.join(repoRoot, 'assets', 'readme', 'hero.svg');
 
